@@ -1,0 +1,37 @@
+<div id='disp'></div>
+<script>
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+let gen1st = {a: 1};
+let gen2nd = Object.create(gen1st);
+gen2nd.b = 2;
+let Gen3nd = Object.create(gen2nd);
+Gen3nd.c = 3;
+
+for (let prop in Gen3nd) {
+	disp(prop);
+}
+
+disp('-----');
+Object.keys(Gen3nd).forEach(prop => {
+	disp(prop);
+});
+
+disp('-----');
+Object.keys(gen2nd).forEach(prop => {
+	disp(prop);
+});
+
+disp('-----');
+Object.keys(gen1st).forEach(prop => {
+	disp(prop);
+});
+
+</script>

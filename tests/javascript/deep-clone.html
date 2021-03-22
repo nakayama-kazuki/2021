@@ -1,0 +1,45 @@
+<div id='disp'></div>
+<script>
+'use strict';
+
+function disp(in_dat, in_tab = 0)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	div.style.marginLeft = in_tab + 'em';
+	document.getElementById('disp').appendChild(div);
+}
+
+function clone(in_obj)
+{
+	const obj = Object.assign({}, in_obj);
+	Object.keys(obj)
+		.filter((key) => {typeof obj[key] === 'object'})
+		.forEach((key) => {obj[key] = clone(obj[key])});
+	return obj;
+}
+
+const org = {
+	a : 1,
+	b : [10, 20],
+	c : {
+		x : 100,
+		y : [-1, null, -100]
+	}
+}
+
+function rdisp(in_obj, in_level = 0)
+{
+	for (const [k, v] of Object.entries(in_obj)) {
+		if (v && (typeof v === 'object')) {
+			disp(k + ' : ', in_level);
+			rdisp(v, in_level + 1);
+		} else {
+			disp(k + ' : ' + v, in_level);
+		}
+	}
+}
+
+rdisp(clone(org));
+
+</script>

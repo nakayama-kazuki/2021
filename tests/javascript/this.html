@@ -1,0 +1,47 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+class SampleClass {
+	constructor() {
+		this.name = 'I am an object';
+	}
+	say1() {
+		window.setTimeout(function(){
+			disp(this.name);
+		}, 0)
+	}
+	say2() {
+		const self = this;
+		window.setTimeout(function(){
+			disp(self.name);
+		}, 0)
+	}
+	say3() {
+		window.setTimeout((function(){
+			disp(this.name);
+		}).bind(this), 0)
+	}
+	say4() {
+		window.setTimeout(() => {
+			disp(this.name);
+		}, 0)
+	}
+}
+
+window.name = 'I am an window';
+let sample = new SampleClass();
+sample.say1();
+sample.say2();
+sample.say3();
+sample.say4();
+
+</script>

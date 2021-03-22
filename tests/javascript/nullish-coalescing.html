@@ -1,0 +1,21 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+let x;
+let y = 0;
+
+disp(x || -99);
+disp(x ?? -99);
+disp(y || -99);
+disp(y ?? -99);
+
+</script>

@@ -1,0 +1,30 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+window.setTimeout(() => {
+	let x = true;
+	try {
+		disp(x);
+		disp(y);
+		disp(z);
+	} catch(err) {
+		disp(err);
+	}
+}, 100);
+
+let y = true;
+
+{
+	let z = true;
+}
+
+</script>

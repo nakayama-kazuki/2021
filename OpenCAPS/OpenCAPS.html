@@ -1,0 +1,1050 @@
+<div id='view'><div class='menu'>
+<label><input type='checkbox' name='CAPS' checked='checked' />CAPS</label><br />
+<label><input type='checkbox' name='DiSC' />DiSC</label><br />
+<button onclick='start(this.parentNode.getElementsByTagName("INPUT"))'>start</button>
+</div></div>
+<div id='description'></div>
+<script>
+
+var Analysis = {
+	cC : [
+		'Controller',
+		'行動的、野心的、エネルギッシュ。',
+		'自分の思い通りに物事を進めたがる。',
+		'決断力がある。',
+		'支配的、威圧的。',
+		'人間関係よりも仕事優先。',
+		'企業家タイプ。',
+		'正義感が強い。',
+		'ペースが速い。',
+		'保身的な態度を嫌い、正直であけっぴろげな性格。',
+		'自分の内面に目を向けるのは苦手。',
+		'人の話を聞かず結論を急ぐ。'
+	],
+	cA : [
+		'Analyzer',
+		'行動は慎重。',
+		'物事に取り組むとき、データを集め分析する。',
+		'計画を立てるのが好き。',
+		'客観的、冷静。',
+		'失敗や間違いが嫌い。',
+		'系統だった物事や規則を好む。',
+		'粘り強く、最後までやり遂げる。',
+		'変化や混乱には弱い。',
+		'未来を予測することに注力する。',
+		'堅実で優れた仕事をする。',
+		'明確で論理的な話し方をする。'
+	],
+	cP : [
+		'Promoter',
+		'アイデアが豊富で創造力もある。',
+		'人と活気のあることをするのが好き。',
+		'新しいことが好きでエネルギッシュ。',
+		'細かいことはあまり気に留めない。',
+		'計画を立てたり計画通りに進めるのは苦手。',
+		'あきっぽい。',
+		'変化、混乱に強く、順応性が高い。',
+		'新しい仕事を始めるのは得意だが、プロジェクトが進んでからの定期点検は苦手。',
+		'未来を自由に描くことを好む',
+		'物事を仕切るのが好きで、また得意である。'
+	],
+	cS : [
+		'Supporter',
+		'人を援助することを好む。',
+		'暖かく、穏やか。',
+		'職場では協調性が高く、意欲もある。',
+		'計画や目標を立てることには関心がない。',
+		'決断に時間がかかる。',
+		'人の心を読むのが得意。',
+		'直観力がある。',
+		'感情に基づいて判断する。',
+		'リスクを冒すのは苦手。',
+		'ビジネスよりも人間関係優先'
+	],
+	dD : [
+		'Drive',
+		'意見をはっきり言う人。コントロールする人。',
+		'盛夏をあげるために、反対意見を克服する環境を築くことに努める。',
+		'結果を直ちに求める。',
+		'行動を呼び起こす。',
+		'挑戦を受けて立つ。',
+		'意思決定が早い。',
+		'現状に疑問を投げかける。',
+		'権威を示す。',
+		'トラブルに進んで対処する。',
+		'問題を解決する。'
+	],
+	di : [
+		'Influence',
+		'他の人に影響を及ぼし、感化する環境を築くことに努める。',
+		'コミュニケーションを大切にする人。 表現する人。',
+		'人と社交的に交わる。',
+		'良い印象を与える。',
+		'はっきりと物を言う。',
+		'やる気を起こす環境を作る。',
+		'意欲をかきたてる。',
+		'人を楽しませる。',
+		'人や状況を楽観的に見る。',
+		'グループに参加する。'
+	],
+	dS : [
+		'Steadiness',
+		'任務遂行のために、他の人と協力することに努める。',
+		'忍耐力、持続力、思いやりのある人。サポートする人。',
+		'一貫して決まった方法で仕事をする。',
+		'忍耐力がある。',
+		'専門技術を磨く。',
+		'人の役に立ちたいと思う。',
+		'忠誠を尽くす。',
+		'聞き上手。',
+		'興奮している人を鎮める。',
+		'安定と調和のある仕事環境を築く。'
+	],
+	dC : [
+		'Compliance',
+		'質と正確性を維持するために現状の中で緻密に仕事をすることに努める。',
+		'構造/組織を考える人。分析する人。',
+		'規範と基準を重視する。',
+		'細部に注意を払う。',
+		'賛否両論を考慮し分析的に考える。',
+		'人と如才なく接する。',
+		'対立や摩擦には巧妙に間接的に対処する。',
+		'正確さをチェックする。',
+		'成果を分析的に評価する。',
+		'秩序だったアプローチでものごとに対処する。'
+	]
+};
+
+var OpenCAPS = {
+	Type : {
+		CAPS : {
+			Titl : '説明文の内容について選択肢から最適なものを選択',
+			Opti : [
+				'あてはまる',
+				'少しあてはまる',
+				'少しあてはまらない',
+				'あてはまらない'
+			],
+			Excl : 'H'
+		},
+		DiSC : {
+			Titl : '最も自分に「あてはまる」「あてはまらない」ものを一つずつ選択',
+			Opti : [
+				'あてはまる',
+				'あてはまらない'
+			],
+			Excl : 'V'
+		}
+	},
+	Ques : [
+		// CAPS
+		// 1-10
+		{
+			Type : 'CAPS',
+			Text : ['自己主張が下手'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cA = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['常に未来に対して情熱をもっている'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cP = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['援助が感謝されず悔しくおもうことがある'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cS = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['競争心が強いほうだ'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cC = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['初対面で冷たい印象を与えがち'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cA = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['他人になかなか気を許さない'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cA = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['他人にどう思われようと意に介さず、自分はいつも幸せだ'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cP = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['仕事のアウトプットについて他人から評価されたい'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cS = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['知らないことを他人に聞くのは苦手'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cA = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['友人が自分以外の人と親しげに話していると嫉妬心を感じることがある'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cS = 3 - score[0];
+				return ret;
+			}
+		},
+		// 11-20
+		{
+			Type : 'CAPS',
+			Text : ['人から頼み事をされるとなかなか嫌とは言えない'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cS = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['パーティー等では目立ちたがる'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cP = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['何かをするときはまず計画をたてる'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cA = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['何かを決めるときに他人の同意を求める'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cS = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['気がつくと場を仕切っていることが多い'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cP = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['変化に強く適応力がある'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cP = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['自分の感情を表現することが苦手'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cA = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['疲れていても無理をおして仕事をする'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cC = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['思い通りにならないとイライラする'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cC = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['チームでいるときは自分のことは後回しにする'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cS = 3 - score[0];
+				return ret;
+			}
+		},
+		// 21-30
+		{
+			Type : 'CAPS',
+			Text : ['短時間に出来るだけ多くのことをしようとする'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cC = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['他人の欠点を見つけやすい'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cC = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['自分は子供っぽいところがあり、陽気である'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cP = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['完全主義者である'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cC = 3 - score[0];
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['納得しないことはやらない'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cC = (3 - score[0]) * 2;
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['野心家である'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cC = (3 - score[0]) * 2;
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['失敗しても立ち直りが早い'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cP = (3 - score[0]) * 2;
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['物事の良い面を評価し、楽観的である'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cP = (3 - score[0]) * 2;
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['他人の評価を気にしがち'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cS = (3 - score[0]) * 2;
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['自分と他人をよく比較する'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cS = (3 - score[0]) * 2;
+				return ret;
+			}
+		},
+		// 31-40
+		{
+			Type : 'CAPS',
+			Text : ['多くの情報を評価～検討してから決断する'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cA = (3 - score[0]) * 2;
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['他愛の無い会話が苦手だ'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cA = (3 - score[0]) * 2;
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['他人に奉仕することは大事だ'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cC = score[0];
+				ret.cS = (3 - score[0]);
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['嫌いな人に対しても世話を焼いてしまう'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cC = score[0];
+				ret.cS = (3 - score[0]);
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['どちらかといえば人見知りだ'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cP = score[0];
+				ret.cA = (3 - score[0]);
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['行動を起こす前によく考える'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cP = score[0];
+				ret.cA = (3 - score[0]);
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['嫌なことは嫌だとはっきり述べる'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cS = score[0];
+				ret.cC = (3 - score[0]);
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['自分が思ったことは率直に述べる'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cS = score[0];
+				ret.cC = (3 - score[0]);
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['楽しい人だとよく言われる'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cA = score[0];
+				ret.cP = (3 - score[0]);
+				return ret;
+			}
+		},
+		{
+			Type : 'CAPS',
+			Text : ['他人の話を聞くよりも、自分が話していることの方が多い'],
+			Eval : function(score) {
+				var ret = {cC : 0, cA : 0, cP : 0, cS : 0};
+				ret.cA = score[0];
+				ret.cP = (3 - score[0]);
+				return ret;
+			}
+		},
+		// DiSC
+		// 1-5
+		{
+			Type : 'DiSC',
+			Text : ['穏やか','説得力あり','謙虚','独創的'],
+			Eval : function(score) {
+				var ret = {dD : 3, di : 1, dS : 0, dC : 2};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['魅力的','よく省みる','頑固','愛想が良い'],
+			Eval : function(score) {
+				var ret = {dD : 2, di : 0, dS : 3, dC : 1};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['言いなり','大胆','誠実','他人を惹き付ける'],
+			Eval : function(score) {
+				var ret = {dD : 1, di : 3, dS : 2, dC : 0};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['自由な気風','分析的','強固な意思','人当たりが良い'],
+			Eval : function(score) {
+				var ret = {dD : 2, di : 0, dS : 3, dC : 1};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['陽気','几帳面','あつかましい','温和'],
+			Eval : function(score) {
+				var ret = {dD : 2, di : 0, dS : 3, dC : 1};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		// 6-10
+		{
+			Type : 'DiSC',
+			Text : ['競争的','思いやりがある','明朗','調和をはかる'],
+			Eval : function(score) {
+				var ret = {dD : 0, di : 2, dS : 1, dC : 3};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['批判的','従順','屈しない','人を楽しませる'],
+			Eval : function(score) {
+				var ret = {dD : 2, di : 3, dS : 1, dC : 0};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				(ret.dC < 0) && (ret.dC = 0);
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['勇敢','影響力がある','服従的','臆病'],
+			Eval : function(score) {
+				var ret = {dD : 0, di : 1, dS : 2, dC : 3};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['社交的','勤勉','独立独歩','もの静か'],
+			Eval : function(score) {
+				var ret = {dD : 2, di : 0, dS : 1, dC : 3};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				(ret.dS < 0) && (ret.dS = 0);
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['冒険心に富む','敏感','親しみを表す','かたよらず常識的'],
+			Eval : function(score) {
+				var ret = {dD : 0, di : 2, dS : 3, dC : 1};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		// 11-15
+		{
+			Type : 'DiSC',
+			Text : ['話好き','自制心がある','伝統を重んじる','決断力がある'],
+			Eval : function(score) {
+				var ret = {dD : 3, di : 0, dS : 1, dC : 2};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['目立つ','大胆不敵','礼儀を重んじる','満足感がある'],
+			Eval : function(score) {
+				var ret = {dD : 1, di : 0, dS : 3, dC : 2};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				(ret.dS > 0) && (ret.dS = 0);
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['挑戦的','外交的','友好的','心配性'],
+			Eval : function(score) {
+				var ret = {dD : 0, di : 1, dS : 2, dC : 3};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['慎重','決意が固い','人を納得させる','温厚'],
+			Eval : function(score) {
+				var ret = {dD : 1, di : 2, dS : 3, dC : 0};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['人を受け入れる','意欲的','協調的','活発'],
+			Eval : function(score) {
+				var ret = {dD : 1, di : 3, dS : 0, dC : 2};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		// 16-20
+		{
+			Type : 'DiSC',
+			Text : ['自信','同情','忍耐','自己主張'],
+			Eval : function(score) {
+				var ret = {dD : 3, di : 0, dS : 1, dC : 2};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['規則正しい','寛大','活気がある','強引'],
+			Eval : function(score) {
+				var ret = {dD : 3, di : 2, dS : 1, dC : 0};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['賞賛される','親切','忍従','我が強い'],
+			Eval : function(score) {
+				var ret = {dD : 3, di : 0, dS : 1, dC : 2};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['人を敬う','開拓者精神','情熱的','人に好意的'],
+			Eval : function(score) {
+				var ret = {dD : 1, di : 2, dS : 3, dC : 0};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['議論好き','順応性','あきらめがいい','快活'],
+			Eval : function(score) {
+				var ret = {dD : 0, di : 3, dS : 2, dC : 1};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		// 21-24
+		{
+			Type : 'DiSC',
+			Text : ['表情が豊か','中立を好む','確信がある','平静'],
+			Eval : function(score) {
+				var ret = {dD : 2, di : 0, dS : 1, dC : 3};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['交際上手','教養がある','精力的','情がある'],
+			Eval : function(score) {
+				var ret = {dD : 2, di : 0, dS : 3, dC : 1};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['気さく','正確','率直','抑制'],
+			Eval : function(score) {
+				var ret = {dD : 2, di : 0, dS : 3, dC : 1};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		},
+		{
+			Type : 'DiSC',
+			Text : ['せっかち','協力的','人気がある','献身的'],
+			Eval : function(score) {
+				var ret = {dD : 0, di : 2, dS : 1, dC : 3};
+				for (t in ret) {
+					ret[t] = score[ret[t]] < 0 ? 0 : [-1, 1][score[ret[t]]];
+				}
+				return ret;
+			}
+		}
+	],
+	Total : -1,
+	Index : [],
+	Sort : function(in_CAPS, in_DiSC) {
+		for (var i = 0; i < this.Ques.length; i++) {
+			if (in_CAPS && (this.Ques[i].Type == 'CAPS')) {
+				this.Index.push({r : Math.random(), i : i});
+			}
+			if (in_DiSC && (this.Ques[i].Type == 'DiSC')) {
+				this.Index.push({r : Math.random(), i : i});
+			}
+		}
+		this.Total = this.Index.length;
+		this.Index.sort(function(e1, e2) {
+			return e1.r - e2.r;
+		});
+	},
+	Form : function(in_header, in_ques, in_callback) {
+		/* row start */
+		var row = function(nodes) {
+			var tr = document.createElement('TR');
+			for (var i = 0; i < nodes.length; i++) {
+				if (!nodes[i]) {
+					if (typeof(cell.colSpan) == 'undefined') {
+						cell.colSpan = 2;
+					} else {
+						cell.colSpan++;
+					}
+				} else {
+					var cell = document.createElement('TD');
+					if (typeof(nodes[i]) == 'string') {
+						cell.appendChild(document.createTextNode(nodes[i]));
+					} else {
+						cell.appendChild(nodes[i]);
+					}
+					tr.appendChild(cell);
+				}
+			}
+			return tr;
+		};
+		/* row end */
+		var table = document.createElement('TABLE');
+		var type = this.Type[in_ques.Type];
+		table.appendChild(row([in_header + ' : ' + type.Titl, null]));
+		/* form start */
+		var form = function(in_num, in_opti, in_excl) {
+			var qset = document.createElement('QSET');
+			for (var i = 0; i < in_opti.length; i++) {
+				var label = document.createElement('LABEL');
+				var input = document.createElement('INPUT');
+				label.appendChild(input);
+				label.appendChild(document.createTextNode(in_opti[i]));
+				input.type = 'radio';
+				input.addEventListener('click', (function(in_eval, in_callback) {
+					/* handler start */
+					return function() {
+						var score = [];
+						var names = {};
+						var qsets = document.getElementsByTagName('QSET');
+						for (var i = 0; i < qsets.length; i++) {
+							var inputs = qsets.item(i).getElementsByTagName('INPUT');
+							var selected = -1;
+							for (var j = 0; j < inputs.length; j++) {
+								if (typeof(names[inputs.item(j).name]) == 'undefined') {
+									names[inputs.item(j).name] = false;
+								}
+								if (inputs.item(j).checked) {
+									if (selected < 0) {
+										selected = j;
+										names[inputs.item(j).name] = true;
+									} else {
+										return;
+									}
+								}
+							}
+							score[i] = selected;
+						}
+						for (var name in names) {
+							if (!names[name]) {
+								return;
+							}
+						}
+						in_callback(in_eval(score));
+					};
+					/* handler end */
+				})(in_ques.Eval, in_callback), false);
+				switch (in_excl) {
+				case 'V' :
+					input.name = 'n' + i;
+					break;
+				case 'H' :
+				default :
+					if (i > 0) {
+						qset.appendChild(document.createElement('BR'));
+					}
+					input.name = 'n' + in_num;
+					break;
+				}
+				qset.appendChild(label);
+			}
+			return qset;
+		};
+		/* form end */
+		for (var i = 0; i < in_ques.Text.length; i++) {
+			table.appendChild(row([in_ques.Text[i], form(i, type.Opti, type.Excl)]));
+		}
+		return table;
+	},
+	NextForm : function(in_callback) {
+		if (this.Index.length > 0) {
+			var ix = (this.Index.pop()).i;
+			var header = (this.Total - this.Index.length) + '/' + this.Total;
+			return this.Form(header, this.Ques[ix], in_callback);
+		} else {
+			return null;
+		}
+	}
+};
+
+function BIND(callback, self)
+{
+	return function() {
+		callback.apply(self, arguments);
+	}
+}
+
+var UI = {
+	Score : {},
+	Countup : function(in_score) {
+		for (var name in in_score) {
+			// console.log(name + ' : ' + in_score[name]);
+			if (typeof(this.Score[name]) == 'undefined') {
+				this.Score[name] = in_score[name];
+			} else {
+				this.Score[name] += in_score[name];
+			}
+		}
+		var callback = BIND(this.Update, this);
+		window.setTimeout(callback, 250);
+	},
+	Update : function() {
+		var callback = BIND(this.Countup, this);
+		var html = OpenCAPS.NextForm(callback);
+		if (!html) {
+			html = this.End();
+			alert('終了です。グラフ（バー）をクリックすると説明が表示されます。');
+		}
+		with (document.getElementById('view')) {
+			if (firstChild) {
+				replaceChild(html, firstChild);
+			} else {
+				appendChild(html);
+			}
+		}
+	},
+	Start : function(in_CAPS, in_DiSC) {
+		OpenCAPS.Sort(in_CAPS, in_DiSC);
+		this.Update();
+	},
+	End : function() {
+		var plus = {cC : 0, cA : 0, cP : 0, cS : 0, dD : 25, di : 25, dS : 25, dC : 25};
+		var div = document.createElement('DIV');
+		div.className = 'graph';
+		for (var name in this.Score) {
+			// console.log(name + ' : ' + this.Score[name]);
+			var bar = document.createElement('DIV');
+			bar.textContent = Analysis[name][0] + ' (' + this.Score[name] + ')';
+			bar.addEventListener('click', (function(in_attrs) {
+				return function() {
+					var ul = document.createElement('UL');
+					for (var i = 0; i < in_attrs.length; i++) {
+						var li = document.createElement('LI');
+						li.textContent = in_attrs[i];
+						ul.appendChild(li);
+					}
+					with (document.getElementById('description')) {
+						if (firstChild) {
+							replaceChild(ul, firstChild);
+						} else {
+							appendChild(ul);
+						}
+					}
+				};
+			})(Analysis[name]), false);
+			bar.className = name;
+			bar.style.width = Math.ceil((this.Score[name] + plus[name])/ 50 * 100) + '%';
+			div.appendChild(bar);
+		}
+		return div;
+	}
+}
+
+function start(nodes)
+{
+	var opt = {};
+	for (var i = 0; i < nodes.length; i++) {
+		with (nodes.item(i)) {
+			opt[name] = checked;
+		};
+	}
+	UI.Start(opt['CAPS'], opt['DiSC']);
+}
+
+</script>
+<style>
+#view .menu {
+	font-family : monospace;
+}
+#view LABEL {
+	padding : 3px;
+}
+#view LABEL:hover {
+	background: -moz-linear-gradient(bottom, #cccccc, #ffffff);
+	background: -webkit-gradient(linear, left bottom, left top, from(#cccccc), to(#ffffff));
+	border-radius : 5px;
+}
+#view TABLE {
+	border-collapse : collapse;
+	width : 600px;
+}
+#view TABLE, #view TD {
+	border : solid 1px #000000;
+	background: -moz-linear-gradient(bottom, #eeeeee, #ffffff);
+	background: -webkit-gradient(linear, left bottom, left top, from(#eeeeee), to(#ffffff));
+}
+#view TD {
+	padding : 5px;
+	width : 300px;
+}
+#view DIV.graph {
+	border : solid 1px black;
+	width : 600px;
+}
+#view DIV.graph DIV {
+	height : 20px;
+	margin : 1px;
+	padding-left : 5px;
+	color: #ffffff;
+	text-shadow: -1px 0px 2px #666666, 0px -1px 2px #666666, 0px 1px 2px #666666, 0px 1px 2px #666666; 
+}
+#view DIV.cC {
+	background-color : #ff6666;
+}
+#view DIV.cA {
+	background-color : #dd4444;
+}
+#view DIV.cP {
+	background-color : #bb2222;
+}
+#view DIV.cS {
+	background-color : #990000;
+}
+#view DIV.dD {
+	background-color : #6666ff;
+}
+#view DIV.di {
+	background-color : #4444dd;
+}
+#view DIV.dS {
+	background-color : #2222bb;
+}
+#view DIV.dC {
+	background-color : #000099;
+}
+</style>

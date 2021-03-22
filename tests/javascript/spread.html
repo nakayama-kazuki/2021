@@ -1,0 +1,35 @@
+<div id='disp'></div>
+<script>
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+const obj1 = {
+	a: 1,
+	b: 1,
+	c: 1
+};
+const obj2 = {
+	c: 2,
+	d: 2,
+	e: 2
+};
+const merged1 = {
+    ...obj1,
+    ...obj2
+};
+const merged2 = {
+    ...obj2,
+    ...obj1
+};
+
+Object.keys(merged1).forEach(prop => {disp(prop + merged1[prop]);});
+disp('---');
+Object.keys(merged2).forEach(prop => {disp(prop + merged2[prop]);});
+
+</script>

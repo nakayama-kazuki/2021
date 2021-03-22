@@ -1,0 +1,28 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let lines = in_dat.split("\n");
+	lines.forEach(line => {
+		if (line) {
+			let div = document.createElement('DIV');
+			div.innerText = line;
+			document.getElementById('disp').appendChild(div);
+		} else {
+			console.log('blank');
+		}
+	});
+}
+
+let name = 'Ken';
+
+disp(`
+Hello !!
+My name is ${name}.
+I'm 100 years old.
+`);
+
+</script>

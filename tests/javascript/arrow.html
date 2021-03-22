@@ -1,0 +1,55 @@
+<div id='disp'></div>
+
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+const how_to_call = {
+	call_asis : function (in_f) {(in_f)()},
+	bind_object : function (in_f) {(in_f).call({})}
+};
+
+function test(in_which, in_how)
+{
+	for (let which in in_which) {
+		for (let how in in_how) {
+			disp('"this" in ' + which + ' + ' + how + ' ...');
+			(in_how[how])(in_which[which]);
+		}
+	}
+}
+
+</script>
+
+<script>
+
+disp('----- context = Script -----');
+
+const which_function = {
+	f_expression : function() {disp(this)},
+	f_arrow : () => {disp(this)}
+};
+
+test(which_function, how_to_call);
+
+</script>
+
+<script type='module'>
+
+disp('----- context = Module -----');
+
+const which_function = {
+	f_expression : function() {disp(this)},
+	f_arrow : () => {disp(this)}
+};
+
+test(which_function, how_to_call);
+
+</script>

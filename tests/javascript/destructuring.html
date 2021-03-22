@@ -1,0 +1,45 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+// 1
+let src_arr = [100, 200];
+let [a, b] = src_arr;
+disp(b);
+
+// 2
+let src_obj = {
+	k1 : 'v1',
+	k2 : 'v2',
+	k3 : 'v3'
+};
+let {k1, k2} = src_obj;
+try {
+	disp(k1);
+	disp(k2);
+	disp(k3);
+} catch(err) {
+	disp(err);
+}
+
+// 3
+(function ({k1, k2}) {
+	try {
+		disp(k1);
+		disp(k2);
+		disp(k3);
+	} catch(err) {
+		disp(err);
+	}
+})(src_obj);
+
+
+</script>

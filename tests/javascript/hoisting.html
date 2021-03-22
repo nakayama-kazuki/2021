@@ -1,0 +1,49 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+let testcases = {
+	'var(before)' : function(){
+		var x = true;
+		disp(x);
+	},
+	'var(after)' : function(){
+		disp(x);
+		var x = true;
+	},
+	'let(before)' : function(){
+		let x = true;
+		disp(x);
+	},
+	'let(after)' : function(){
+		disp(x);
+		let x = true;
+	},
+	'const(before)' : function(){
+		const x = true;
+		disp(x);
+	},
+	'const(after)' : function(){
+		disp(x);
+		const x = true;
+	}
+}
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+for (let testname in testcases) {
+	disp(testname + ' ... ');
+	try {
+		(testcases[testname])();
+	} catch(err) {
+		disp(err);
+	}
+}
+
+</script>

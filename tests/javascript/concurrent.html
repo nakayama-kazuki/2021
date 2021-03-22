@@ -1,0 +1,53 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+const setting = [
+	{
+		start : 50,
+		delay : 100
+	},
+	{
+		start : 100,
+		delay : 200
+	},
+	{
+		start : 150,
+		delay : 300
+	}
+];
+
+function wait(in_msec)
+{
+	let start = Date.now();
+	while (Date.now() - start < in_msec) {
+		console.log('waiting ... ');
+	}
+}
+
+let start = Date.now();
+
+/*
+for (var i = 0; i < setting.length; i++) {
+	window.setTimeout(() => {
+		console.log(setting[i].delay); // in this case, setting[i] will be undefined
+	}, setting[i].start);
+}
+*/
+
+for (let i = 0; i < setting.length; i++) {
+	window.setTimeout(() => {
+		disp('event[' + i + '] (set at ' + setting[i].start + 'ms) start : ' + ((Date.now()) - start));
+		wait(setting[i].delay);
+	}, setting[i].start);
+}
+
+</script>

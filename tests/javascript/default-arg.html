@@ -1,0 +1,39 @@
+<div id='disp'></div>
+<script>
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+/*
+function func(in_arg = 'default-value-expression')
+{
+	disp(in_arg);
+}
+*/
+
+const func = (in_arg = 'default-value-arrow') => {
+	disp(in_arg);
+}
+
+const tests = [
+	() => {func();},
+	() => {var a; func(a);},
+	() => {func(a); var a;},
+	() => {let a; func(a);},
+	() => {func(a); let a;}
+]
+
+tests.forEach(func => {
+	try {
+		(func)();
+	} catch (err) {
+		disp(err);
+	}
+});
+
+</script>
