@@ -1,0 +1,41 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+function some_proc(in_cnt)
+{
+	return new Promise((proc_when_successful, proc_when_error) => {
+		// synchronously
+		let result_of_proc = Math.random() > 0.5;
+		if (result_of_proc) {
+			// asynchronously
+			(proc_when_successful)(in_cnt + 1);
+		} else {
+			// asynchronously
+			(proc_when_error)('you lose ! your score is : ' + in_cnt);
+		}
+	});
+}
+
+some_proc(1).then((in_cnt) => {
+	return some_proc(in_cnt);
+}).then((in_cnt) => {
+	return some_proc(in_cnt);
+}).then((in_cnt) => {
+	// not Promise
+	return in_cnt + 1;
+}).then((in_cnt) => {
+	disp('you win ! your score is : ' + in_cnt);
+}).catch((in_msg) => {
+	disp(in_msg);
+});
+
+</script>

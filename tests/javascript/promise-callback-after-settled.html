@@ -1,0 +1,30 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+let some_async_proc = new Promise((proc_when_successful) => {
+	let result_of_proc = Math.random() > 0.5;
+	if (result_of_proc) {
+		(proc_when_successful)();
+	} else {
+		throw new Error('error');
+	}
+});
+
+window.setTimeout(() => {
+	some_async_proc.then(() => {
+		disp('callback after settled (fulfilled)');
+	}).catch(() => {
+		disp('callback after settled (rejected)');
+	});
+}, 3000);
+
+</script>

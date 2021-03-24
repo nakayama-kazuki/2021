@@ -1,0 +1,37 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+function some_proc()
+{
+	return new Promise((proc_when_successful, proc_when_error) => {
+		// synchronously
+ 		disp('2. some_proc');
+		let result_of_proc = Math.random() > 0.5;
+		if (result_of_proc) {
+			// asynchronously
+			(proc_when_successful)();
+		} else {
+			// asynchronously
+			(proc_when_error)();
+		}
+	});
+}
+
+disp('1. before some_proc');
+some_proc().then(() => {
+	disp('4. callback of then');
+}).catch(() => {
+	disp('4. callback of catch');
+});
+disp('3. after some_proc');
+
+</script>
