@@ -1,0 +1,48 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+function some_proc()
+{
+	return new Promise((resolve, reject) => {
+		let wait = Math.random() * 1000;
+		window.setTimeout(() => {
+			(resolve)(wait);
+		}, wait);
+		window.setTimeout(() => {
+			(reject)('timeout');
+		}, 500);
+	});
+}
+
+/*
+disp(1);
+some_proc().then((in_wait) => {
+	disp('3. done : ' + in_wait);
+}).catch((err) => {
+	disp('3. ' + err);
+});
+disp(2);
+*/
+
+// await is only valid in async functions and the top level bodies of modules
+(async function() {
+	disp(1);
+	try {
+		let wait = await some_proc();
+		disp('2. done : ' + wait);
+	} catch(err) {
+		disp('2. ' + err);
+	}
+	disp(3);
+})();
+
+</script>

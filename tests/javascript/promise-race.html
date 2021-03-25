@@ -1,0 +1,35 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+function some_proc(in_wait)
+{
+	return new Promise((resolve) => {
+		window.setTimeout(() => {
+			(resolve)(in_wait);
+		}, in_wait * 10000);
+	});
+}
+
+disp('1. before Promise.all');
+
+let promise_arr = [];
+for (let i = 0; i < 10; i++) {
+	promise_arr.push(some_proc(Math.random()));
+}
+
+Promise.race(promise_arr).then(function(in_wait) {
+	disp('3. No.1 is ' + in_wait);
+});
+
+disp('2. after Promise.all');
+
+</script>
