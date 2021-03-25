@@ -1,0 +1,66 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+/*
+function some_proc()
+{
+	return new Promise((proc_when_successful) => {
+		// synchronously
+ 		disp('2. some_proc');
+		let result_of_proc = Math.random() > 0.5;
+		if (result_of_proc) {
+			(proc_when_successful)();
+		} else {
+			throw new Error();
+		}
+	});
+}
+*/
+
+async function some_proc()
+{
+	// synchronously
+	disp('2. some_proc');
+	let result_of_proc = Math.random() > 0.5;
+	if (result_of_proc) {
+		return true;
+	} else {
+		throw new Error();
+	}
+}
+
+/*
+disp('1. before async function');
+some_proc().then((in_res) => {
+	disp('4. callback of then : ' + in_res);
+}).catch(() => {
+	disp('4. callback of catch');
+});
+disp('3. after some_proc');
+*/
+
+// await is only valid in async functions and the top level bodies of modules
+(async function() {
+	disp('1. before await function');
+	try {
+		let res = await some_proc();
+		// disp('4. after await : ' + res);
+		disp('3. after await : ' + res);
+	} catch(err) {
+		// disp('4. after await (err)');
+		disp('3. after await (err)');
+	}
+	// disp('3. after some_proc');
+	disp('4. after some_proc');
+})();
+
+</script>

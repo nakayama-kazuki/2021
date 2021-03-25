@@ -10,26 +10,38 @@ function disp(in_dat)
 	document.getElementById('disp').appendChild(div);
 }
 
+/*
 function some_proc()
 {
-	return new Promise((proc_when_successful, proc_when_error) => {
+	return new Promise((proc_when_successful) => {
 		// synchronously
  		disp('2. some_proc');
 		let result_of_proc = Math.random() > 0.5;
 		if (result_of_proc) {
 			(proc_when_successful)();
 		} else {
-			(proc_when_error)();
+			throw new Error();
 		}
 	});
 }
+*/
 
-disp('1. before some_proc');
-some_proc().then(() => {
-	// asynchronously
-	disp('4. callback of then');
+async function some_proc()
+{
+	// synchronously
+	disp('2. some_proc');
+	let result_of_proc = Math.random() > 0.5;
+	if (result_of_proc) {
+		return true;
+	} else {
+		throw new Error();
+	}
+}
+
+disp('1. before async function');
+some_proc().then((in_res) => {
+	disp('4. callback of then : ' + in_res);
 }).catch(() => {
-	// asynchronously
 	disp('4. callback of catch');
 });
 disp('3. after some_proc');
