@@ -10,40 +10,57 @@ function disp(in_dat)
 	document.getElementById('disp').appendChild(div);
 }
 
-/*
-function some_proc()
+function some_proc_a()
 {
-	return new Promise((proc_when_successful) => {
-		// synchronously
- 		disp('2. some_proc');
-		let result_of_proc = Math.random() > 0.5;
-		if (result_of_proc) {
-			(proc_when_successful)();
+	return new Promise((resolve) => {
+		if (Math.random() > 0.5) {
+			(resolve)(true);
 		} else {
 			throw new Error();
 		}
 	});
 }
-*/
 
-async function some_proc()
+async function some_proc_b()
 {
-	// synchronously
-	disp('2. some_proc');
-	let result_of_proc = Math.random() > 0.5;
-	if (result_of_proc) {
+	return new Promise((resolve) => {
+		if (Math.random() > 0.5) {
+			(resolve)(true);
+		} else {
+			throw new Error();
+		}
+	});
+}
+
+async function some_proc_c()
+{
+	if (Math.random() > 0.5) {
 		return true;
 	} else {
 		throw new Error();
 	}
 }
 
-disp('1. before async function');
-some_proc().then((in_res) => {
-	disp('4. callback of then : ' + in_res);
-}).catch(() => {
-	disp('4. callback of catch');
+some_proc_a().then((in_res) => {
+	disp('1. then : ' + in_res);
+}).catch((err) => {
+	disp('1. catch : ' + err);
 });
-disp('3. after some_proc');
+
+// Async Function must return Promise instance.
+// when Async Function retuens Promise instance, it means asis.
+some_proc_b().then((in_res) => {
+	disp('2. then : ' + in_res);
+}).catch((err) => {
+	disp('2. catch : ' + err);
+});
+
+// when Async Function returns value, it means Fulfilled Promise instance with value.
+// in Async Function, when exception happens, it returns Rejected Promise instance.
+some_proc_c().then((in_res) => {
+	disp('3. then : ' + in_res);
+}).catch((err) => {
+	disp('3. catch : ' + err);
+});
 
 </script>

@@ -1,0 +1,41 @@
+<div id='disp'></div>
+<script>
+
+'use strict';
+
+function disp(in_dat)
+{
+	let div = document.createElement('DIV');
+	div.innerText = in_dat;
+	document.getElementById('disp').appendChild(div);
+}
+
+function some_proc(in_percent)
+{
+	return new Promise((resolve) => {
+		// synchronously
+		(resolve)(Math.random());
+	});
+}
+
+disp('1. before Promise.all');
+
+let promise_arr = [];
+for (let i = 0; i < 100; i++) {
+	promise_arr.push(some_proc());
+}
+
+Promise.all(promise_arr).then(function(in_arr) {
+	// asynchronously
+	let total = in_arr.reduce(function(sum, element){
+		return sum + element;
+	}, 0);
+	disp('4. callback of then : ' + total);
+}).catch((err) => {
+	// asynchronously
+	disp('4. callback of catch');
+});
+
+disp('3. after Promise.all');
+
+</script>
