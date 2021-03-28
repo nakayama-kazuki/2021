@@ -425,16 +425,11 @@ const OpenCAPS = {
 	_CurrentIx : -1,
 	_ShuffledIndex : [],
 	Shuffle : function() {
-		for (let i = 0; i < this._Questions.length; i++) {
-			this._ShuffledIndex.push({rand : Math.random(), ix : i});
-		}
-		this._ShuffledIndex.sort(function(e1, e2) {
-			return e1.rand - e2.rand;
-		});
+		this._ShuffledIndex = Object.keys(this._Questions).sort(() => {return Math.random() - 0.5});
 	},
 	GetNextQuestion : function() {
 		if (this._ShuffledIndex.length > 0) {
-			this._CurrentIx = (this._ShuffledIndex.shift()).ix;
+			this._CurrentIx = parseInt(this._ShuffledIndex.shift());
 			return {
 				Current : (this._Questions.length - this._ShuffledIndex.length) + ' / ' + (this._Questions.length),
 				Description : this._Questions[this._CurrentIx].Description,
