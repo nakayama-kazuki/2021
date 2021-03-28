@@ -1,0 +1,31 @@
+<button>hello world</button>
+<script>
+
+const button = document.getElementsByTagName('BUTTON').item(0);
+
+let my_obj = {
+	callback : (ev) => {
+		console.log(ev);
+	},
+	proc_normal : function() {
+		// NG : this = element
+//		button.addEventListener('click', function(ev) {(this.callback)(ev);});
+		// OK : this = my_obj
+		button.addEventListener('click', this.callback);
+		// OK : this = my_obj
+//		button.addEventListener('click', (ev) => {(this.callback)(ev);});
+	},
+	proc_arrow : () => {
+		// NG : this = element
+//		button.addEventListener('click', function(ev) {(this.callback)(ev);});
+		// NG : this = window
+//		button.addEventListener('click', this.callback);
+		// NG : this = window
+//		button.addEventListener('click', (ev) => {(this.callback)(ev);});
+	}
+};
+
+//my_obj.proc_normal();
+my_obj.proc_arrow();
+
+</script>
