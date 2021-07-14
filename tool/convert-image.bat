@@ -2,6 +2,19 @@
 
 $im = imagecreatefrompng('php://stdin');
 imagepalettetotruecolor($im);
-imagetruecolortopalette($im, FALSE, 255);
-imagepng($im, __DIR__ . '\copied-image-as-png8.png');
+
+$w = imagesx($im);
+$h = imagesy($im);
+
+define('WCAP', 800);
+
+if ($w > WCAP) {
+	$im_resize = imagecreatetruecolor(WCAP, $h * WCAP / $w);
+	imagecopyresampled($im_resize, $im, 0, 0, 0, 0, WCAP, $h * WCAP / $w, $w, $h);
+	imagetruecolortopalette($im_resize, FALSE, 255);
+	imagepng($im_resize, __DIR__ . '\copied-image-as-png8.png');
+} else {
+	imagetruecolortopalette($im, FALSE, 255);
+	imagepng($im, __DIR__ . '\copied-image-as-png8.png');
+}
 
