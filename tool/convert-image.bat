@@ -1,16 +1,17 @@
 @powershell "(Get-Clipboard -Format Image).Save([console]::OpenStandardOutput(), [System.Drawing.Imaging.ImageFormat]::Png);" | "C:\xampp\php\php" -r "$PHPCODE = implode('', array_slice(file('%0'), 1)); eval($PHPCODE);" & goto:eof
 
-define('BITS', 8);
-define('DIGIT', 'XX');
-define('FORMAT', '%0' . strlen(DIGIT) . 's');
-define('FNAME', 'copied-image-as-png' . BITS . '-' . DIGIT . '.png');
+define('BITS', 8); // 256
+//define('BITS', 6); // 64
+define('BRANCH', 'XX');
+define('FORMAT', '%0' . strlen(BRANCH) . 's');
+define('FNAME', 'copied-image-as-png' . BITS . '-' . BRANCH . '.png');
 define('PALETTE', (2 ** BITS));
 
 function png_file($in_path)
 {
 	$i = 0;
 	do {
-		$filename = "{$in_path}/" . str_replace(DIGIT, sprintf(FORMAT, $i++), FNAME);
+		$filename = "{$in_path}/" . str_replace(BRANCH, sprintf(FORMAT, $i++), FNAME);
 	} while (file_exists($filename));
 	return $filename;
 }
