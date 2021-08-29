@@ -31,13 +31,13 @@ function decide_palette($in_im)
 			$major_colors++;
 		}
 	}
-	echo "major colors : {$major_colors}";
 	for ($i = 1; $i <= 8; $i++) {
 		$palette = 2 ** $i;
 		if ($palette >= $major_colors) {
 			break;
 		}
 	}
+	echo "palette : {$palette}\n";
 	return $palette;
 }
 
@@ -53,7 +53,7 @@ function png_file($in_path)
 $im = @imagecreatefrompng('php://stdin');
 
 if ($im === FALSE) {
-	echo "error (no image)";
+	echo "error (no image)\n";
 	exit;
 } else {
 	if (!imageistruecolor($im)) {
@@ -67,7 +67,7 @@ $h = imagesy($im);
 define('WCAP', 1000);
 
 if ($w > WCAP) {
-	echo "resizing ...";
+	echo "resizing ...\n";
 	$im_resize = imagecreatetruecolor(WCAP, $h * WCAP / $w);
 	imagecopyresampled($im_resize, $im, 0, 0, 0, 0, WCAP, $h * WCAP / $w, $w, $h);
 	imagetruecolortopalette($im_resize, FALSE, decide_palette($im_resize));
