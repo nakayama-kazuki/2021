@@ -1,11 +1,13 @@
 @powershell "(Get-Clipboard -Format Image).Save([console]::OpenStandardOutput(), [System.Drawing.Imaging.ImageFormat]::Png);" | "C:\xampp\php\php" -r "$PHPCODE = implode('', array_slice(file('%0'), 1)); eval($PHPCODE);" & goto:eof
 
-define('BRANCH', 'XX');
-define('FORMAT', '%0' . strlen(BRANCH) . 's');
-define('FNAME', 'copied-image-as-png-' . BRANCH . '.png');
+define('MAX_BIT', 8);
+define('AUTO_DETECT_PALETTE', TRUE);
 
-function decide_palette($in_im)
+function detect_palette($in_im)
 {
+	if (!AUTO_DETECT_PALETTE) {
+		return (2 ** MAX_BIT);
+	}
 	$w = imagesx($in_im);
 	$h = imagesy($in_im);
 	$counter = array();
@@ -31,7 +33,7 @@ function decide_palette($in_im)
 			$major_colors++;
 		}
 	}
-	for ($i = 1; $i <= 8; $i++) {
+	for ($i = 1; $i <= MAX_BIT; $i++) {
 		$palette = 2 ** $i;
 		if ($palette >= $major_colors) {
 			break;
@@ -40,6 +42,10 @@ function decide_palette($in_im)
 	echo "palette : {$palette}\n";
 	return $palette;
 }
+
+define('BRANCH', 'XX');
+define('FORMAT', '%0' . strlen(BRANCH) . 's');
+define('FNAME', 'copied-image-as-png-' . BRANCH . '.png');
 
 function png_file($in_path)
 {
@@ -61,19 +67,17 @@ if ($im === FALSE) {
 	}
 }
 
-$w = imagesx($im);
-$h = imagesy($im);
-
 define('WCAP', 1000);
 
-if ($w > WCAP) {
-	echo "resizing ...\n";
-	$im_resize = imagecreatetruecolor(WCAP, $h * WCAP / $w);
-	imagecopyresampled($im_resize, $im, 0, 0, 0, 0, WCAP, $h * WCAP / $w, $w, $h);
-	imagetruecolortopalette($im_resize, FALSE, decide_palette($im_resize));
-	imagepng($im_resize, png_file(__DIR__));
-} else {
-	imagetruecolortopalette($im, FALSE, decide_palette($im));
-	imagepng($im, png_file(__DIR__));
-}
+$srcw = imagesx($im);
+$srch = imagesy($im);
+$dstw = ($srcw > WCAP) ? WCAP : $srcw;
+$dsth = ($srcw > WCAP) ? $srch * WCAP / $srcw : $srch;
 
+$im_dst = imagecreatetruecolor($dstw, $dsth);
+imagecopyresampled($im_dst, $im, 0, 0, 0, 0, $dstw, $dsth, $srcw, $srch);
+imagetruecolortopalette($im_dst, FALSE, detect_palette($im_dst));
+imagepng($im_dst, png_file(__DIR__));
+
+imagedestroy($im_dst);
+imagedestroy($im);
