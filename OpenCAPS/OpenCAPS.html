@@ -534,6 +534,16 @@ const UIR = {
 	}
 };
 
+Object.prototype.keyOfMaxValue = function() {
+	const max = Math.max(...(Object.values(this)));
+	for (let [key, val] of Object.entries(this)) {
+		if (val == max) {
+			return key;
+		}
+	}
+	return null;
+}
+
 function update(in_init, in_ix)
 {
 	if (in_init) {
@@ -542,13 +552,17 @@ function update(in_init, in_ix)
 		OpenCAPS.UpdateScore(in_ix);
 	}
 	((q) => {
-		let replace;
 		if (q) {
-			replace = UIQ.CreateForm(q.Current + ' : ' + q.Description, q.Answers);
+			VIEW.replaceInnerNode(
+				UIQ.CreateForm(q.Current + ' : ' + q.Description, q.Answers)
+			);
 		} else {
-			replace = UIR.CreateResult(OpenCAPS.GetScore());
+			let scores = OpenCAPS.GetScore();
+			VIEW.replaceInnerNode(
+				UIR.CreateResult(scores)
+			);
+			show_detail(scores.keyOfMaxValue());
 		}
-		VIEW.replaceInnerNode(replace);
 	})(OpenCAPS.GetNextQuestion());
 }
 
@@ -558,12 +572,12 @@ UIQ.AddSelectionListener((in_ev) => {
 	}, 300);
 });
 
-UIR.AddSelectionListener((in_ev) => {
-	let cls = in_ev.target.className;
+function show_detail(in_caps)
+{
 	let cont = EL('DIV');
 	// features
 	let ul = EL('UL');
-	Features[cls].forEach((feature) => {
+	Features[in_caps].forEach((feature) => {
 		let li = EL('LI');
 		li.appendChild(TX(feature));
 		ul.appendChild(li);
@@ -571,10 +585,14 @@ UIR.AddSelectionListener((in_ev) => {
 	cont.appendChild(ul);
 	// image
 	let img = EL('IMG', 'iIMG');
-	img.src = Images[cls];
+	img.src = Images[in_caps];
 	img.width = '600';
 	cont.appendChild(img);
 	MISC.replaceInnerNode(cont);
+}
+
+UIR.AddSelectionListener((in_ev) => {
+	show_detail(in_ev.target.className);
 });
 
 ((in_hash) => {
@@ -587,7 +605,10 @@ UIR.AddSelectionListener((in_ev) => {
 				scores[name] = parseInt(value);
 			}
 		});
-		VIEW.replaceInnerNode(UIR.CreateResult(scores));
+		VIEW.replaceInnerNode(
+			UIR.CreateResult(scores)
+		);
+		show_detail(scores.keyOfMaxValue());
 	} else {
 		update(true, -1);
 	}
@@ -612,7 +633,6 @@ UIR.AddSelectionListener((in_ev) => {
 	color : gray;
 }
 #iIMG {
-	xmargin-top : 10px;
 	border-color : #eeeeee #cccccc #cccccc #eeeeee;
 	border-style : solid;
 	border-width : 1px;
