@@ -82,7 +82,7 @@ const Features = {
 	]
 }
 
-const OpenDiSC = {
+const OpenAssessment = {
 	_Answers : {
 		Y : {
 			text : 'あてはまる',
@@ -280,10 +280,10 @@ const OpenDiSC = {
 			return null;
 		}
 	},
-	UpdateScore : function(in_update) {
+	UpdateScore : function(in_result, in_disc) {
 		['Y', 'N'].forEach((result) => {
-			if (result in in_update) {
-				this._Answers[result].disc = in_update[result];
+			if (result == in_result) {
+				this._Answers[result].disc = in_disc;
 			}
 		});
 		if (this._AnswerIsFulfilled()) {
@@ -388,42 +388,57 @@ const UIR = {
 	}
 };
 
+function keyHasMaxValue(in_obj)
+{
+//	return (Object.entries(in_obj).sort((e1, e2) => {return e2[1] - e1[1]}))[0][0];
+	let current = {
+		key : null,
+		max : Number.NEGATIVE_INFINITY
+	};
+	Object.keys(in_obj).forEach((key) => {
+		if (in_obj[key] > current.max) {
+			current.key = key;
+			current.max = in_obj[key];
+		}
+	});
+	return current.key;
+}
+
 const QUESTION_TEXT = '最も「あてはまる」選択肢と「あてはまらない」選択肢を 1 つずつ選んでください。';
 
-function update(in_init, in_answer, in_disc)
+function update_view()
 {
-	if (in_init) {
-		OpenDiSC.Shuffle();
-	} else {
-		let update = {};
-		update[in_answer] = in_disc;
-		if (!OpenDiSC.UpdateScore(update)) {
-			return;
-		}
-	}
 	((q) => {
-		let replace;
 		if (q) {
-			replace = UIQ.CreateForm(q.Current + ' : ' + QUESTION_TEXT, q.Options, q.Answers);
+			VIEW.replaceInnerNode(
+				UIQ.CreateForm(q.Current + ' : ' + QUESTION_TEXT, q.Options, q.Answers)
+			);
 		} else {
-			replace = UIR.CreateResult(OpenDiSC.GetScore());
+			let scores = OpenAssessment.GetScore();
+			VIEW.replaceInnerNode(
+				UIR.CreateResult(scores)
+			);
+			show_detail(keyHasMaxValue(scores));
 		}
-		VIEW.replaceInnerNode(replace);
-	})(OpenDiSC.GetNextQuestion());
+	})(OpenAssessment.GetNextQuestion());
 }
 
 UIQ.AddSelectionListener((in_ev) => {
 	window.setTimeout(() => {
-		update(false, in_ev.target.getAttribute('result'), in_ev.target.getAttribute('disc'));
+		let el = in_ev.target;
+		if (!OpenAssessment.UpdateScore(el.getAttribute('result'), el.getAttribute('disc'))) {
+			return;
+		}
+		update_view();
 	}, 300);
 });
 
-UIR.AddSelectionListener((in_ev) => {
-	let cls = in_ev.target.className;
+function show_detail(in_which)
+{
 	let cont = EL('DIV');
 	// features
 	let ul = EL('UL');
-	Features[cls].forEach((feature) => {
+	Features[in_which].forEach((feature) => {
 		let li = EL('LI');
 		li.appendChild(TX(feature));
 		ul.appendChild(li);
@@ -431,10 +446,14 @@ UIR.AddSelectionListener((in_ev) => {
 	cont.appendChild(ul);
 	// image
 	let img = EL('IMG', 'iIMG');
-	img.src = Images[cls];
+	img.src = Images[in_which];
 	img.width = '600';
 	cont.appendChild(img);
 	MISC.replaceInnerNode(cont);
+}
+
+UIR.AddSelectionListener((in_ev) => {
+	show_detail(in_ev.target.className);
 });
 
 ((in_hash) => {
@@ -447,9 +466,13 @@ UIR.AddSelectionListener((in_ev) => {
 				scores[name] = parseInt(value);
 			}
 		});
-		VIEW.replaceInnerNode(UIR.CreateResult(scores));
+		VIEW.replaceInnerNode(
+			UIR.CreateResult(scores)
+		);
+		show_detail(keyHasMaxValue(scores));
 	} else {
-		update(true, -1);
+		OpenAssessment.Shuffle();
+		update_view();
 	}
 })(location.hash);
 
@@ -480,7 +503,6 @@ LABEL.N {
 	color : gray;
 }
 #iIMG {
-	xmargin-top : 10px;
 	border-color : #eeeeee #cccccc #cccccc #eeeeee;
 	border-style : solid;
 	border-width : 1px;
