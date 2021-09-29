@@ -1,0 +1,140 @@
+<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r127/three.min.js'></script>
+<canvas id='myCanvas'></canvas>
+<script>
+
+class surfacePosition {
+	constructor(in_x, in_y) {
+		this.setSrcPos(in_x, in_y);
+		this.setDstPos(in_x, in_y);
+	}
+	get vector() {
+		return [(this._dstPos[0] - this._srcPos[0]) * -1, this._dstPos[1] - this._srcPos[1]];
+	}
+	setSrcPos(in_x, in_y) {
+		this._srcPos = [in_x, in_y];
+	}
+	setDstPos(in_x, in_y) {
+		this._dstPos = [in_x, in_y];
+	}
+}
+
+class sphericalPotostion {
+	constructor(in_radius) {
+		this._radius = in_radius;
+		this._angleX = 0;
+		this._angleY = 0;
+	}
+	convVectorToXYZ(in_vector, in_updateAngle) {
+		let angleX = Math.atan2(in_vector[0], this._radius);
+		let angleY = Math.atan2(in_vector[1], this._radius);
+		let x = Math.sin(this._angleX + angleX) * this._radius;
+		let y = Math.sin(this._angleY + angleY) * this._radius;
+		let z = (this._radius ** 2 - x ** 2 - y ** 2) ** 0.5;
+		if (in_updateAngle) {
+			this._angleX += angleX;
+			this._angleY += angleY;
+		}
+		return [x, y, z];
+	}
+}
+
+class sphericalPotostionCamera {
+	constructor(in_radius, in_camera) {
+		this._spherical = new sphericalPotostion(in_radius);
+		this._camera = in_camera;
+		this._setCamera(0, 0, in_radius);
+	}
+	_setCamera(in_x, in_y, in_z) {
+		this._camera.position.set(in_x, in_y, in_z);
+		this._camera.lookAt(new THREE.Vector3(0, 0, 0));
+	}
+	startMousemove(in_x, in_y, in_booster = 1) {
+		this._booster = in_booster;
+		this._surface = new surfacePosition(in_x, in_y);
+	}
+	convMousemoveToCameramove(in_x, in_y) {
+		if (!this._surface) {
+			return;
+		}
+		this._surface.setDstPos(in_x, in_y);
+		let vector = this._surface.vector.map(e => e * this._booster);
+		let pos = this._spherical.convVectorToXYZ(vector, false);
+		this._setCamera(pos[0], pos[1], pos[2]);
+	}
+	stopMousemove() {
+		let vector = this._surface.vector.map(e => e * this._booster);
+		let pos = this._spherical.convVectorToXYZ(vector, true);
+		this._setCamera(pos[0], pos[1], pos[2]);
+		this._surface = null;
+	}
+}
+
+const cMargin = 0.1;
+const cW = window.innerWidth * (1 - cMargin);
+const cH = window.innerHeight * (1 - cMargin);
+const cCanvas = document.querySelector('#myCanvas');
+
+const cRenderer = new THREE.WebGLRenderer({canvas : cCanvas});
+cRenderer.setPixelRatio(window.devicePixelRatio);
+cRenderer.setSize(cW, cH);
+
+const cCamera = (in_setting => {
+	return (new THREE.PerspectiveCamera(
+		in_setting.fov,
+		in_setting.aspect,
+		in_setting.near,
+		in_setting.far
+	));
+})({
+	fov : 45,
+	aspect : cW / cH,
+	near : 1,
+	far : 10000
+});
+
+const cSPC = new sphericalPotostionCamera(1000, cCamera);
+
+const cContainer = (in_meshList => {
+	let _container = new THREE.Object3D();
+	in_meshList.forEach((in_mesh) => {
+		_container.add(in_mesh);
+	});
+	return _container;
+})([
+	new THREE.Mesh(
+		new THREE.BoxGeometry(300, 300, 300),
+		new THREE.MeshStandardMaterial({
+			color: 0x0000FF,
+			side: THREE.DoubleSide
+		})
+	)
+]);
+
+const cLight = new THREE.AmbientLight(0xCCCCCC, 1.0);
+
+const cScene = new THREE.Scene();
+cScene.add(cContainer);
+cScene.add(cLight);
+
+(function tick() {
+	cRenderer.render(cScene, cCamera);
+	requestAnimationFrame(tick);
+})();
+
+const listenerTable = {
+	mousedown : (in_ev) => {
+		cSPC.startMousemove(in_ev.offsetX, in_ev.offsetY);
+	},
+	mousemove : (in_ev) => {
+		cSPC.convMousemoveToCameramove(in_ev.offsetX, in_ev.offsetY);
+	},
+	mouseup : (in_ev) => {
+		cSPC.stopMousemove();
+	}
+};
+
+Object.keys(listenerTable).forEach((in_key) => {
+	cCanvas.addEventListener(in_key, listenerTable[in_key]);
+});
+
+</script>
