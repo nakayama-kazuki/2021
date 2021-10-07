@@ -1,0 +1,92 @@
+<canvas id='myCanvas'></canvas>
+<script>
+
+class canvasGraphManager
+{
+	constructor(in_canvas) {
+		this._ctx = in_canvas.getContext('2d');
+		this._target = {
+			w : in_canvas.width,
+			h : in_canvas.height
+		};
+		this._def = {
+			bgColor : '#ffffff',
+			drawColor : '#000000',
+			axesColor : '#cccccc',
+			axesDashLen : 5
+		};
+	}
+	_userToTarget(in_dx, in_dy) {
+		return {
+			x : (in_dx - this._user.x1) * this._target.w / (this._user.x2 - this._user.x1),
+			y : (this._user.y2 - in_dy) * this._target.h / (this._user.y2 - this._user.y1)
+		};
+	}
+	setCoordinate(in_x1, in_x2, in_y1, in_y2) {
+		this._user = {
+			x1 : (in_x1 < in_x2) ? in_x1 : in_x2,
+			x2 : (in_x1 < in_x2) ? in_x2 : in_x1,
+			y1 : (in_y1 < in_y2) ? in_y1 : in_y2,
+			y2 : (in_y1 < in_y2) ? in_y2 : in_y1
+		};
+	}
+	setCoordinateX(in_x1, in_x2) {
+		let ratio = this._target.h / this._target.w;
+		this.setCoordinate(
+			in_x1,
+			in_x2,
+			in_x1 * ratio,
+			in_x2 * ratio
+		);
+	}
+	setCoordinateY(in_y1, in_y2) {
+		let ratio = this._target.w / this._target.h;
+		this.setCoordinate(
+			in_y1 * ratio,
+			in_y2 * ratio,
+			in_y1,
+			in_y2
+		);
+	}
+	setBGColor(in_color = this._def.bgColor) {
+		this._ctx.fillStyle = in_color;
+		this._ctx.fillRect(0, 0, this._target.w, this._target.h);
+	}
+	drawAxes(in_color = this._def.axesColor, in_dash_len = this._def.axesDashLen) {
+		let dash = [in_dash_len, in_dash_len];
+		this.drawLine(0, this._user.y1, 0, this._user.y2, in_color, dash);
+		this.drawLine(this._user.x1, 0, this._user.x2, 0, in_color, dash);
+	}
+	drawPoint(in_x, in_y, in_color = this._def.drawColor) {
+		let pos = this._userToTarget(in_x, in_y);
+		this._ctx.fillStyle = in_color;
+		this._ctx.fillRect(pos.x, pos.y, 1, 1);
+	}
+	drawLine(in_x1, in_y1, in_x2, in_y2, in_color = this._def.drawColor, in_dash = []) {
+		let p1 = this._userToTarget(in_x1, in_y1);
+		let p2 = this._userToTarget(in_x2, in_y2);
+		this._ctx.beginPath();
+		this._ctx.strokeStyle = in_color;
+		this._ctx.setLineDash(in_dash);
+		this._ctx.moveTo(p1.x, p1.y);
+		this._ctx.lineTo(p2.x, p2.y);
+		this._ctx.closePath();
+		this._ctx.stroke();
+	}
+}
+
+(in_canvas => {
+	let margin = 0.9;
+	in_canvas.width = window.innerWidth * margin;
+	in_canvas.height = window.innerHeight * margin;
+	const cgm = new canvasGraphManager(in_canvas);
+	cgm.setCoordinateX(-10, 10);
+	cgm.setBGColor('#aaaaaa');
+	cgm.drawAxes('#ffffff');
+	for (let x = -10; x < 10; x = x + 0.01) {
+		y = Math.sin(x);
+		cgm.drawPoint(x, y);
+	}
+})(document.querySelector('#myCanvas'));
+
+</script>
