@@ -2,84 +2,6 @@
 <canvas id='myCanvas'></canvas>
 <script>
 
-class surfacePosition {
-	constructor(in_x, in_y) {
-		this.setSrc(in_x, in_y);
-		this.setDst(in_x, in_y);
-	}
-	get vector() {
-		return [(this._dst.x - this._src.x) * -1, this._dst.y - this._src.y];
-	}
-	setSrc(in_x, in_y) {
-		this._src = {
-			x : in_x,
-			y : in_y
-		};
-	}
-	setDst(in_x, in_y) {
-		this._dst = {
-			x : in_x,
-			y : in_y
-		};
-	}
-}
-
-class sphericalPosition {
-	constructor(in_radius) {
-		this._radius = in_radius;
-		this._radianX = 0;
-		this._radianY = 0;
-	}
-	_round(in_radian) {
-		let radian = in_radian % (Math.PI * 2);
-		return (radian > 0) ? radian : radian + (Math.PI * 2);
-	}
-	convVectorToXYZ(in_vector, in_updateRadian) {
-		let radianX = Math.atan2(in_vector[0], this._radius);
-		let radianY = Math.atan2(in_vector[1], this._radius);
-		let x = Math.sin(this._radianX + radianX) * this._radius;
-		let y = Math.sin(this._radianY + radianY) * this._radius;
-		let z = (this._radius ** 2 - x ** 2 - y ** 2) ** 0.5;
-		if (in_updateRadian) {
-			this._radianX = this._round(this._radianX + radianX);
-			this._radianY = this._round(this._radianY + radianY);
-		}
-		return [x, y, z];
-	}
-}
-
-class sphericalPositionCamera {
-	constructor(in_radius, in_camera) {
-		this._spherical = new sphericalPosition(in_radius);
-		this._camera = in_camera;
-		this._setCameraPos(0, 0, in_radius);
-	}
-	_setCameraPos(in_x, in_y, in_z) {
-		this._camera.position.set(in_x, in_y, in_z);
-		this._camera.lookAt(new THREE.Vector3(0, 0, 0));
-	}
-	_updateCameraBySurface(in_updateRadian) {
-		let vector = this._surface.vector.map(in_e => in_e * this._booster);
-		let pos = this._spherical.convVectorToXYZ(vector, in_updateRadian);
-		this._setCameraPos(pos[0], pos[1], pos[2]);
-	}
-	startMousemove(in_x, in_y, in_booster = 1) {
-		this._surface = new surfacePosition(in_x, in_y);
-		this._booster = in_booster;
-	}
-	convMousemoveToCameramove(in_x, in_y) {
-		if (!this._surface) {
-			return;
-		}
-		this._surface.setDst(in_x, in_y);
-		this._updateCameraBySurface(false);
-	}
-	stopMousemove() {
-		this._updateCameraBySurface(true);
-		this._surface = null;
-	}
-}
-
 const cMargin = 0.1;
 const cW = window.innerWidth * (1 - cMargin);
 const cH = window.innerHeight * (1 - cMargin);
@@ -105,18 +27,38 @@ const cCamera = (in_setting => {
 
 const cContainer = (in_meshList => {
 	let _container = new THREE.Object3D();
-	in_meshList.forEach((in_mesh) => {
-		_container.add(in_mesh);
+	in_meshList.forEach((in_obj) => {
+		_container.add(in_obj.mesh);
+		in_obj.mesh.position.x = in_obj.x;
+		in_obj.mesh.position.y = in_obj.y;
+		in_obj.mesh.position.z = in_obj.z;
 	});
 	return _container;
 })([
-	new THREE.Mesh(
-		new THREE.BoxGeometry(300, 300, 300),
-		new THREE.MeshStandardMaterial({
-			color: 0x0000FF,
-			side: THREE.DoubleSide
-		})
-	)
+	{
+		mesh : new THREE.Mesh(
+			new THREE.BoxGeometry(300, 300, 300),
+			new THREE.MeshStandardMaterial({
+				color: 0x0000FF,
+				side: THREE.DoubleSide
+			})
+		),
+		x : 0,
+		y : 0,
+		z : 0
+	},
+	{
+		mesh : new THREE.Mesh(
+			new THREE.BoxGeometry(100, 100, 100),
+			new THREE.MeshStandardMaterial({
+				color: 0x0000FF,
+				side: THREE.DoubleSide
+			})
+		),
+		x : 250,
+		y : 250,
+		z : 0
+	}
 ]);
 
 const cLight = new THREE.AmbientLight(0xCCCCCC, 1.0);
@@ -130,23 +72,66 @@ cScene.add(cLight);
 	requestAnimationFrame(tick);
 })();
 
-const cSPC = new sphericalPositionCamera(1000, cCamera);
-
-const listenerTable = {
-	mousedown : (in_ev) => {
-		let booster = 10;
-		cSPC.startMousemove(in_ev.offsetX, in_ev.offsetY, booster);
-	},
-	mousemove : (in_ev) => {
-		cSPC.convMousemoveToCameramove(in_ev.offsetX, in_ev.offsetY);
-	},
-	mouseup : (in_ev) => {
-		cSPC.stopMousemove();
+class sphericalCamera {
+	constructor(in_radius, in_camera) {
+		this._radius = in_radius;
+		this._camera = in_camera;
+		this._camera.position.set(0, 0, in_radius);
+		this._camera.lookAt(new THREE.Vector3(0, 0, 0));
+		this._src = null;
+		this._setting = {
+			threshold : 5,
+			movespeed : 5
+		};
 	}
-};
+	moveCameraRectangular(in_x, in_y) {
+		let delta = (new THREE.Vector2(in_x, in_y)).sub(this._src);
+		if (delta.length() < this._setting.threshold) {
+			return;
+		}
+		let the = delta.x / this._radius * this._setting.movespeed * -1;
+		let phi = delta.y / this._radius * this._setting.movespeed * -1;
+		this.moveCameraPolar(the, phi);
+		this._src = new THREE.Vector2(in_x, in_y);
+	}
+	moveCameraPolar(in_the, in_phi) {
+		let spherical = new THREE.Spherical();
+		spherical.setFromVector3(this._camera.position);
+		spherical.theta += in_the;
+		spherical.phi -= in_phi;
+		spherical.makeSafe();
+		this._camera.position.setFromSpherical(spherical); 
+		this._camera.lookAt(new THREE.Vector3(0, 0, 0));
+	}
+	attachListener(in_elem) {
+		const eventList = ['mousedown', 'mousemove', 'mouseup'];
+		eventList.forEach((in_event_name) => {
+			let listener = ((in_self) => {
+				let invertAxis = -1;
+				let method = '_' + in_event_name;
+				return (in_ev) => {
+					(in_self[method])(in_ev.offsetX, in_ev.offsetY * invertAxis);
+				}
+			})(this);
+			(in_elem).addEventListener(in_event_name, listener);
+		});
+	}
+	_mousedown(in_x, in_y) {
+		this._src = new THREE.Vector2(in_x, in_y);
+	}
+	_mousemove(in_x, in_y) {
+		if (!this._src) {
+			return;
+		}
+		this.moveCameraRectangular(in_x, in_y);
+	}
+	_mouseup(in_x, in_y) {
+		this.moveCameraRectangular(in_x, in_y);
+		this._src = null;
+	}
+}
 
-Object.keys(listenerTable).forEach((in_key) => {
-	cCanvas.addEventListener(in_key, listenerTable[in_key]);
-});
+const cSC = new sphericalCamera(1000, cCamera);
+cSC.attachListener(cCanvas);
 
 </script>
