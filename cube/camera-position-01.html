@@ -74,64 +74,71 @@ cScene.add(cLight);
 
 class sphericalCamera {
 	constructor(in_radius, in_camera) {
+		this._sphericalBuffer = new THREE.Spherical();
 		this._radius = in_radius;
 		this._camera = in_camera;
-		this._camera.position.set(0, 0, in_radius);
+		this._camera.position.set(0, 0, this._radius);
+		this.moveCameraPolar(0, 0);
+	}
+	get r() {
+		return this._radius;
+	}
+	moveCameraPolar(in_delta_theta, in_delta_phi) {
+		this._sphericalBuffer.setFromVector3(this._camera.position);
+		this._sphericalBuffer.theta += in_delta_theta;
+		this._sphericalBuffer.phi -= in_delta_phi;
+		this._sphericalBuffer.makeSafe();
+		this._camera.position.setFromSpherical(this._sphericalBuffer); 
 		this._camera.lookAt(new THREE.Vector3(0, 0, 0));
-		this._src = null;
-		this._setting = {
-			threshold : 5,
-			movespeed : 5
+	}
+}
+
+class sphericalCameraController {
+	constructor(in_spherical_camera, in_threshold = 5, in_movespeed = 5) {
+		this._camera = in_spherical_camera;
+		this._conf = {
+			threshold : in_threshold,
+			movespeed : in_movespeed
 		};
-	}
-	moveCameraRectangular(in_x, in_y) {
-		let delta = (new THREE.Vector2(in_x, in_y)).sub(this._src);
-		if (delta.length() < this._setting.threshold) {
-			return;
-		}
-		let the = delta.x / this._radius * this._setting.movespeed * -1;
-		let phi = delta.y / this._radius * this._setting.movespeed * -1;
-		this.moveCameraPolar(the, phi);
-		this._src = new THREE.Vector2(in_x, in_y);
-	}
-	moveCameraPolar(in_the, in_phi) {
-		let spherical = new THREE.Spherical();
-		spherical.setFromVector3(this._camera.position);
-		spherical.theta += in_the;
-		spherical.phi -= in_phi;
-		spherical.makeSafe();
-		this._camera.position.setFromSpherical(spherical); 
-		this._camera.lookAt(new THREE.Vector3(0, 0, 0));
+		this._toAngle = this._conf.movespeed / this._camera.r;
+		this._src = null;
 	}
 	attachListener(in_elem) {
 		const eventList = ['mousedown', 'mousemove', 'mouseup'];
 		eventList.forEach((in_event_name) => {
 			let listener = ((in_self) => {
 				let invertAxis = -1;
-				let method = '_' + in_event_name;
 				return (in_ev) => {
-					(in_self[method])(in_ev.offsetX, in_ev.offsetY * invertAxis);
+					(in_self[in_event_name])(in_ev.offsetX, in_ev.offsetY * invertAxis);
 				}
 			})(this);
 			(in_elem).addEventListener(in_event_name, listener);
 		});
 	}
-	_mousedown(in_x, in_y) {
+	mousedown(in_x, in_y) {
 		this._src = new THREE.Vector2(in_x, in_y);
 	}
-	_mousemove(in_x, in_y) {
+	mousemove(in_x, in_y) {
 		if (!this._src) {
 			return;
 		}
-		this.moveCameraRectangular(in_x, in_y);
+		let delta = (new THREE.Vector2(in_x, in_y)).sub(this._src);
+		if (delta.length() < this._conf.threshold) {
+			return;
+		}
+		// move the camera in the opposite direction to the vector
+		let the = delta.x * this._toAngle * -1;
+		let phi = delta.y * this._toAngle * -1;
+		this._camera.moveCameraPolar(the, phi);
+		this._src = new THREE.Vector2(in_x, in_y);
 	}
-	_mouseup(in_x, in_y) {
-		this.moveCameraRectangular(in_x, in_y);
+	mouseup(in_x, in_y) {
 		this._src = null;
 	}
 }
 
 const cSC = new sphericalCamera(1000, cCamera);
-cSC.attachListener(cCanvas);
+const cController = new sphericalCameraController(cSC);
+cController.attachListener(cCanvas);
 
 </script>
