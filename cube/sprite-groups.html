@@ -1,0 +1,91 @@
+<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r127/three.min.js'></script>
+<canvas id='myCanvas'></canvas>
+<script>
+
+const cMargin = 0.1;
+const cW = window.innerWidth * (1 - cMargin);
+const cH = window.innerHeight * (1 - cMargin);
+const cCanvas = document.querySelector('#myCanvas');
+
+const cRenderer = new THREE.WebGLRenderer({canvas : cCanvas});
+cRenderer.setPixelRatio(window.devicePixelRatio);
+cRenderer.setSize(cW, cH);
+
+const cCamera = (in_settings => {
+	let settings = Object.values(in_settings);
+	return (new THREE.PerspectiveCamera(...settings));
+})({
+	fov : 45,
+	aspect : cW / cH,
+	near : 1,
+	far : 10000
+});
+cCamera.position.set(0, 500, 500);
+cCamera.lookAt(new THREE.Vector3(0, 0, 0));
+
+const cScene = new THREE.Scene();
+
+const cSVG = `
+<svg xmlns='http://www.w3.org/2000/svg'>
+<radialGradient id='grad' fx='70%' fy='30%'>
+<stop offset='10%' stop-color='#ffcc99' />
+<stop offset='100%' stop-color='#333333' />
+</radialGradient>
+<circle cx='50' cy='50' r='50' fill='url(#grad)' />
+</svg>`;
+
+const cSpriteGroups = (in_settings => {
+	let groups = [];
+	let totalWidth = in_settings.max - in_settings.min;
+	let layerWidth = totalWidth / in_settings.layers;
+	for (let i = 0; i < in_settings.cnt; i++) {
+		let material = new THREE.SpriteMaterial({
+			map: new THREE.TextureLoader().load(in_settings.src),
+		});
+		material.fog = true;
+		let sprite = new THREE.Sprite(material);
+		sprite.scale.set(in_settings.scale, in_settings.scale, in_settings.scale);
+		((...args) => {
+			let delta = 0;
+			args.forEach(in_axis => {
+				sprite.position[in_axis] = Math.random() * totalWidth + in_settings.min;
+				delta += sprite.position[in_axis] ** 2;
+			});
+			let ix = Math.floor((delta ** 0.5) / layerWidth);
+			if (!groups[ix]) {
+				groups[ix] = new THREE.Group();
+			}
+			groups[ix].add(sprite);
+		})('x', 'y', 'z');
+	}
+	return groups;
+})({
+	src : 'data:image/svg+xml;base64,' + btoa(cSVG),
+	cnt : 500,
+	scale : 5,
+	min : -500,
+	max : 500,
+	layers : 5
+});
+
+cSpriteGroups.forEach(in_group => {
+	cScene.add(in_group);
+});
+
+const cLight = new THREE.SpotLight(0xffffff, 1, 2000, Math.PI / 4, 1);
+cLight.position.set(0, 550, 600);
+
+cScene.add(cLight);
+cScene.fog = new THREE.Fog(0x000000, 300, 1000);
+
+(function tick() {
+	for (let i = 0; i < cSpriteGroups.length; i++) {
+		cSpriteGroups[i].rotation.y += 0.001 * (i + 1);
+		cSpriteGroups[i].rotation.x += 0.0005 * (i + 1);
+		cSpriteGroups[i].rotation.z += 0.0001 * (i + 1);
+	}
+	cRenderer.render(cScene, cCamera);
+	requestAnimationFrame(tick);
+})();
+
+</script>
