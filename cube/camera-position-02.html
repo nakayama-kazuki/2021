@@ -15,13 +15,9 @@ const cRenderer = new THREE.WebGLRenderer({canvas : cCanvas});
 cRenderer.setPixelRatio(window.devicePixelRatio);
 cRenderer.setSize(cW, cH);
 
-const cCamera = (in_setting => {
-	return (new THREE.PerspectiveCamera(
-		in_setting.fov,
-		in_setting.aspect,
-		in_setting.near,
-		in_setting.far
-	));
+const cCamera = (in_settings => {
+	let settings = Object.values(in_settings);
+	return (new THREE.PerspectiveCamera(...settings));
 })({
 	fov : 45,
 	aspect : cW / cH,
