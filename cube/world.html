@@ -1,0 +1,176 @@
+<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r127/three.min.js'></script>
+<canvas id='myCanvas'></canvas>
+<script>
+
+const cMargin = 0.1;
+const cW = window.innerWidth * (1 - cMargin);
+const cH = window.innerHeight * (1 - cMargin);
+const cCanvas = document.querySelector('#myCanvas');
+
+const cRenderer = new THREE.WebGLRenderer({canvas : cCanvas});
+cRenderer.setPixelRatio(window.devicePixelRatio);
+cRenderer.setSize(cW, cH);
+
+const cPlaneWidth = 1000;
+const cRadius = 50;
+
+class insideBox
+{
+	constructor(in_width, in_center = (new THREE.Vector3())) {
+		this._width = in_width;
+		this._center = in_center;
+		this._curDirV = (new THREE.Vector3()).random()
+		this._curPosV = (this._curDirV.clone()).multiplyScalar(this._width / 2).add(this._center);
+	}
+	reversibleAxis() {
+		const axisList = ['x', 'y', 'z'];
+		for (let i = 0; i < axisList.length; i++) {
+			let axis = axisList[i];
+			if ((this._curDirV[axis] < 0) && (this._curPosV[axis] < this._center[axis] - this._width / 2)) {
+				return axis;
+			}
+			if ((this._curDirV[axis] > 0) && (this._curPosV[axis] > this._center[axis] + this._width / 2)) {
+				return axis;
+			}
+		}
+		return null;
+	}
+	move(in_booster = 1) {
+		let axis = this.reversibleAxis() ;
+		if (axis) {
+			this._curDirV[axis] *= -1;
+		}
+		this._curPosV = this._curPosV.add(this._curDirV.clone().multiplyScalar(in_booster));
+	}
+	curVector() {
+		return this._curPosV;
+	}
+}
+
+const cIB = new insideBox(cPlaneWidth - cRadius * 2);
+
+const cCamera = (in_settings => {
+	let settings = Object.values(in_settings);
+	return (new THREE.PerspectiveCamera(...settings));
+})({
+	fov : 45,
+	aspect : cW / cH,
+	near : 1,
+	far : 10000
+});
+cCamera.position.set(0, 0, 0);
+cCamera.lookAt(cIB.curVector());
+
+const cSphere = (in_settings => {
+	let settings = Object.values(in_settings);
+	return new THREE.Mesh(
+		new THREE.SphereGeometry(...settings),
+		new THREE.MeshNormalMaterial({})
+	);
+})({
+	radius : cRadius,
+	widthSegments : 32,
+	heightSegments : 32
+});
+cSphere.position.copy(cIB.curVector());
+
+function _createPlaneMesh(in_w, in_h, in_color)
+{
+	return new THREE.Mesh(
+		new THREE.PlaneGeometry(in_w, in_h, 1, 1),
+		new THREE.MeshLambertMaterial({color: in_color})
+	);
+}
+
+function createPlaneMesh(in_color)
+{
+	return _createPlaneMesh(cPlaneWidth, cPlaneWidth, in_color)
+}
+
+const cContainer = (in_meshList => {
+	let _container = new THREE.Object3D();
+	in_meshList.forEach((in_obj) => {
+		_container.add(in_obj.mesh);
+		Object.keys(in_obj.pos).forEach(in_axis => {
+			in_obj.mesh.position[in_axis] = in_obj.pos[in_axis];
+		});
+		in_obj.mesh.lookAt(new THREE.Vector3(0, 0, 0));
+	});
+	return _container;
+})([
+	{
+		mesh : createPlaneMesh(0x0000ff),
+		pos : {
+			x : 0,
+			y : 0,
+			z : -1 * (cPlaneWidth / 2)
+		}
+	},
+	{
+		mesh : createPlaneMesh(0x0000ff),
+		pos : {
+			x : 0,
+			y : 0,
+			z : cPlaneWidth / 2
+		}
+	},
+	{
+		mesh : createPlaneMesh(0x0000cc),
+		pos : {
+			x : -1 * (cPlaneWidth / 2),
+			y : 0,
+			z : 0
+		}
+	},
+	{
+		mesh : createPlaneMesh(0x0000cc),
+		pos : {
+			x : cPlaneWidth / 2,
+			y : 0,
+			z : 0
+		}
+	},
+	{
+		mesh : createPlaneMesh(0x000099),
+		pos : {
+			x : 0,
+			y : -1 * (cPlaneWidth / 2),
+			z : 0
+		}
+	},
+	{
+		mesh : createPlaneMesh(0x000099),
+		pos : {
+			x : 0,
+			y : cPlaneWidth / 2,
+			z : 0
+		}
+	}
+]);
+
+const cScene = new THREE.Scene();
+
+const cLight = new THREE.AmbientLight(0xFFFFFF, 1.0);
+
+cScene.fog = (in_settings => {
+	let settings = Object.values(in_settings);
+	return (new THREE.Fog(...settings));
+})({
+	color : 0x000000,
+	near : 0,
+	far : cPlaneWidth * 1.5
+});
+
+cScene.add(cLight);
+cScene.add(cContainer);
+cScene.add(cSphere);
+
+(function tick() {
+	cIB.move(5)
+	cSphere.position.copy(cIB.curVector());
+	cCamera.lookAt(cIB.curVector());
+	cRenderer.render(cScene, cCamera);
+	requestAnimationFrame(tick);
+})();
+
+</script>
