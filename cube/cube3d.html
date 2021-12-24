@@ -1,0 +1,627 @@
+<style>
+body {
+	margin: 0;
+	overflow: hidden;
+}
+</style>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r127/three.min.js'></script>
+<canvas id='myCanvas'></canvas>
+<script>
+
+const cCanvas = document.querySelector('#myCanvas');
+
+function eachXYZ(in_callback)
+{
+	let axisList = ['x', 'y', 'z'];
+	axisList.forEach(axis => {
+		(in_callback)(axis);
+	});
+}
+
+function restXYZ(in_axis1, in_axis2)
+{
+	let ret = [];
+	eachXYZ(axis => {
+		if ([in_axis1, in_axis2].indexOf(axis) < 0) {
+			ret.push(axis);
+		}
+	});
+	return ret[0];
+}
+
+function adjust(in_value, in_notch)
+{
+	let notch = in_notch / 2;
+	let abs = Math.abs(in_value);
+	let cnt = Math.floor(abs / notch);
+	if (cnt % 2 === 1) {
+		cnt += 1;
+	}
+	if (abs === 0) {
+		return 0;
+	} else {
+		return notch * cnt * (in_value / abs);
+	}
+}
+
+function adjust_05PI(in_value)
+{
+	return adjust(in_value, Math.PI / 2);
+}
+
+CanvasRenderingContext2D.prototype.fillRoundRect = function(x, y, w, h, r) {
+	this.beginPath();
+	this.moveTo(x + r, y);
+	this.lineTo(x + w - r, y);
+	this.arc(x + w - r, y + r, r, Math.PI * (3 / 2), 0, false);
+	this.lineTo(x + w, y + h - r);
+	this.arc(x + w - r, y + h - r, r, 0, Math.PI * (1 / 2), false);
+	this.lineTo(x + r, y + h);
+	this.arc(x + r, y + h - r, r, Math.PI * (1 / 2), Math.PI, false);
+	this.lineTo(x, y + r);
+	this.arc(x + r, y + r, r, Math.PI, Math.PI * (3 / 2), false);
+	this.closePath();
+	this.fill();
+}
+
+function createCubeTexture(in_size = 100, in_grad = 4)
+{
+	// gradation (from black to white)
+	let maxDepth = 255;
+	let styles = [];
+	for (let i = 0; i < in_grad; i++) {
+		let depth = Math.ceil(maxDepth / (in_grad - 1) * i);
+		styles[i] = 'rgb(' + depth + ',' + depth + ',' + depth + ')';
+	}
+	// draw and convert using toDataUR
+	let canvas = document.createElement('CANVAS');
+	canvas.width = in_size;
+	canvas.height = in_size;
+	const ctx = canvas.getContext('2d');
+	let radius = 6;
+	for (let i = 0; i < in_grad; i++) {
+		ctx.fillStyle = styles[i];
+		if (i > 0) {
+			ctx.fillRoundRect(i, i, in_size - i * 2, in_size - i * 2, radius - i);
+		} else {
+			ctx.fillRect(i, i, in_size - i * 2, in_size - i * 2);
+		}
+	}
+	// return texture
+	return (new THREE.TextureLoader()).load(canvas.toDataURL());
+}
+
+function convertUnit(in_src_x, in_src_y, in_src_r, in_dst_r)
+{
+	let src_w = in_src_r.x2 - in_src_r.x1;
+	let src_h = in_src_r.y2 - in_src_r.y1;
+	let dst_w = in_dst_r.x2 - in_dst_r.x1;
+	let dst_h = in_dst_r.y2 - in_dst_r.y1;
+	return {
+		x : (in_src_x - in_src_r.x1) * dst_w / src_w + in_dst_r.x1,
+		y : (in_src_y - in_src_r.y1) * dst_h / src_h + in_dst_r.y1
+	};
+}
+
+function convertRaycasterUnit(in_src_x, in_src_y, in_src_w, in_src_h)
+{
+	let src_r = {
+		x1 : 0,
+		x2 : in_src_w,
+		y1 : 0,
+		y2 : in_src_h
+	};
+	let dst_r = {
+		x1 : -1,
+		x2 : 1,
+		y1 : -1,
+		y2 : 1
+	};
+	return convertUnit(in_src_x, in_src_y, src_r, dst_r);
+}
+
+const cBoxGeometry = {
+	insedeColor : 0x222222,
+	surfaceList : [
+		{
+			axis : 'x',
+			side :  1,
+			color : 0xffffff,
+			rotate : {
+				y : -1,
+				z : 1
+			}
+		},
+		{
+			axis : 'x',
+			side : -1,
+			color : 0xff0000,
+			rotate : {
+				y : 1,
+				z : -1
+			}
+		},
+		{
+			axis : 'y',
+			side :  1,
+			color : 0xffff00,
+			rotate : {
+				z : -1,
+				x : 1
+			}
+		},
+		{
+			axis : 'y',
+			side : -1,
+			color : 0x3333ff,
+			rotate : {
+				z : 1,
+				x : -1
+			}
+		},
+		{
+			axis : 'z',
+			side :  1,
+			color : 0xff9933,
+			rotate : {
+				x : -1,
+				y : 1
+			}
+		},
+		{
+			axis : 'z',
+			side : -1,
+			color : 0x33cc33,
+			rotate : {
+				x : 1,
+				y : -1
+			}
+		}
+	],
+	facesInSurface : 2,
+	createColorList : function(in_dim, in_x, in_y, in_z) {
+		let pos = {
+			x : in_x,
+			y : in_y,
+			z : in_z
+		};
+		let list = [];
+		for (let i = 0; i < this.surfaceList.length; i++) {
+			let surface = this.surfaceList[i];
+			if (surface.side > 0) {
+				// edge (side = 1)
+				if (pos[surface.axis] === in_dim - 1) {
+					list.push(surface.color);
+				} else {
+					list.push(this.insedeColor);
+				}
+			} else {
+				// edge (side = -1)
+				if (pos[surface.axis] === 0) {
+					list.push(surface.color);
+				} else {
+					list.push(this.insedeColor);
+				}
+			}
+		}
+		return list;
+	},
+	getSurface : function(in_face_ix) {
+		return this.surfaceList[Math.trunc(in_face_ix / this.facesInSurface)];
+	},
+	sameSurface : function(in_face_ix1, in_face_ix2) {
+		let f1 = this.getSurface(in_face_ix1);
+		let f2 = this.getSurface(in_face_ix2);
+		if (f1.side !== f2.side) {
+			return false;
+		}
+		if (f1.axis !== f2.axis) {
+			return false;
+		}
+		return true;
+	}
+};
+
+const cCube = {
+	conf : {
+		dim : 3,
+		pieceSize : 100
+	},
+	texture : createCubeTexture(),
+	pieces : [],
+	faceCapture : null,
+	dragged : {
+		position : null,
+		faceIx : null,
+		piece : null,
+		cache : null
+	},
+	buff : {
+		raycaster : new THREE.Raycaster(),
+		rotating : {
+			group : new THREE.Object3D(),
+			axis : null,
+			toRight : 0,
+			initVec : null
+		}
+	},
+	initPieces : function() {
+		let _pos = (in_val) => {
+			return this.conf.pieceSize * (in_val - (this.conf.dim - 1) / 2);
+		};
+		for (let z = 0; z < this.conf.dim; z++) {
+			for (let y = 0; y < this.conf.dim; y++) {
+				for (let x = 0; x < this.conf.dim; x++) {
+					if ((0 < z) && (z < this.conf.dim - 1) &&
+						(0 < y) && (y < this.conf.dim - 1) &&
+						(0 < x) && (x < this.conf.dim - 1)) {
+						// inside cube
+						continue;
+					}
+					let colorList = cBoxGeometry.createColorList(this.conf.dim, x, y, z);
+					colorList.forEach((item, index) => {
+						colorList[index] =
+							new THREE.MeshLambertMaterial({color: item, map: this.texture});
+					});
+					let piece = new THREE.Mesh(
+						new THREE.BoxGeometry(
+							this.conf.pieceSize,
+							this.conf.pieceSize,
+							this.conf.pieceSize
+						),
+						colorList
+					);
+					piece.position.set(_pos(x), _pos(y), _pos(z));
+					this.pieces.push(piece);
+				}
+			}
+		}
+	},
+	init : function() {
+		// this.faceCapture
+		let delta = 0.1;
+		let size = this.conf.pieceSize * this.conf.dim - delta * 2;
+		let trans = new THREE.MeshBasicMaterial({transparent: true, opacity: 0});
+		this.faceCapture = new THREE.Mesh(
+			new THREE.BoxGeometry(size, size, size),
+			[trans, trans, trans, trans, trans, trans]
+		);
+		this.faceCapture.position.set(0, 0, 0);
+		// this.pieces
+		this.initPieces();
+	},
+	get objects() {
+		return this.pieces.concat(
+			this.faceCapture,
+			this.buff.rotating.group
+		);
+	},
+	hitTest : function(in_x, in_y, in_w, in_h, in_camera) {
+		let pos = convertRaycasterUnit(in_x, in_y, in_w, in_h);
+		this.buff.raycaster.setFromCamera((new THREE.Vector2(pos.x, pos.y * -1)), in_camera);
+		let test1 = this.buff.raycaster.intersectObject(this.faceCapture, false);
+		if (test1.length === 0) {
+			return null;
+		} else {
+			// test2 should exist because this.faceCapture is inside of this.pieces
+			let test2 = this.buff.raycaster.intersectObjects(this.pieces, false);
+			return {
+				piece : test2[0].object,
+				faceIx : test1[0].faceIndex
+			};
+		}
+	},
+	hitTestOnDraggedCache : function(in_x, in_y) {
+		if (!this.dragged.cache) {
+			return null;
+		}
+		return this.hitTest(
+			in_x,
+			in_y,
+			this.dragged.cache.w,
+			this.dragged.cache.h,
+			this.dragged.cache.camera
+		);
+	},
+	get isDragged() {
+		if (this.dragged.position) {
+			return true;
+		} else {
+			return false;
+		}
+	},
+	uiDrag : function(in_x, in_y, in_w, in_h, in_camera) {
+		let test = this.hitTest(in_x, in_y, in_w, in_h, in_camera);
+		if (!test) {
+			return false;
+		}
+		this.dragged.position = {
+			x : in_x,
+			y : in_y
+		};
+		this.dragged.faceIx = test.faceIx;
+		this.dragged.piece = test.piece;
+		this.dragged.cache = {
+			w : in_w,
+			h : in_h,
+			camera : in_camera
+		};
+		// dragged
+		return true;
+	},
+	get isRotating() {
+		if (this.buff.rotating.group.children.length > 0) {
+			return true;
+		} else {
+			return false;
+		}
+	},
+	uiRotate : function(in_x, in_y) {
+		if (!this.isDragged) {
+			return;
+		}
+		let x = in_x;
+		let y = in_y;
+		let dx = x - this.dragged.position.x;
+		let dy = y - this.dragged.position.y;
+		let threshold = 5;
+		if (new THREE.Vector2(dx, dy).length() < threshold) {
+			return;
+		}
+		if (this.isRotating) {
+			this.rotate(x, y, false);
+		} else {
+			while (true) {
+				let _e = this.preRotateStatus;
+				let status = this.preRotate(x, y);
+				if (status === _e.WOULDBLOCK) {
+					x += dx;
+					y += dy;
+				} else {
+					if (status === _e.READY) {
+						this.buff.rotating.initVec = new THREE.Vector2(dx, dy);
+					}
+					break;
+				}
+			}
+		}
+	},
+	uiRelease : function(in_x, in_y) {
+		if (this.isDragged) {
+			this.rotate(in_x, in_y, true);
+		}
+		this.clearRotationGroup();
+		// settings of dragged
+		this.dragged.position = null;
+		this.dragged.faceIx = null;
+		this.dragged.piece = null;
+		this.dragged.cache = null;
+		// settings of rotating
+		this.buff.rotating.axis = null;
+		this.buff.rotating.toRight = 0;
+		this.buff.rotating.initVec = null;
+	},
+	isSame(in_val1, in_val2) {
+		let error = 0.1;
+		return (Math.abs(in_val2 - in_val1) < error);
+	},
+	neighborAxis : function(in_peace1, in_peace2) {
+		let same = 0;
+		let diff;
+		eachXYZ(axis => {
+			if (this.isSame(in_peace1.position[axis], in_peace2.position[axis])) {
+				same++;
+			} else {
+				diff = axis;
+			}
+		});
+		if (same === 2) {
+			return diff;
+		} else {
+			return null;
+		}
+	},
+	preRotateStatus : {
+		WOULDBLOCK : Symbol(),
+		READY : Symbol(),
+		EXIT : Symbol()
+	},
+	preRotate : function(in_x, in_y) {
+		let test = this.hitTestOnDraggedCache(in_x, in_y);
+		if (!test) {
+			return this.preRotateStatus.EXIT;
+		}
+		let p1 = this.dragged.piece;
+		let p2 = test.piece;
+		let _e = this.preRotateStatus;
+		if (cBoxGeometry.sameSurface(this.dragged.faceIx, test.faceIx)) {
+			if (p1 === p2) {
+				// 1. same face + same piece ... continue to search
+				return _e.WOULDBLOCK;
+			} else {
+				let axis = this.neighborAxis(p1, p2);
+				if (!axis) {
+					return _e.EXIT;
+				}
+				// 2. same face + other piece (neighbor) ... rotate
+				let face = cBoxGeometry.getSurface(this.dragged.faceIx);
+				let rest = restXYZ(axis, face.axis);
+				this.buff.rotating.axis = rest;
+				this.buff.rotating.toRight
+					= face.rotate[axis] * ((p1.position[axis] < p2.position[axis]) ? -1 : 1);
+				for (let i = 0; i < this.pieces.length; i++) {
+					let piece = this.pieces[i];
+					if (this.isSame(piece.position[rest], this.dragged.piece.position[rest])) {
+						this.buff.rotating.group.add(piece);
+					}
+				}
+			}
+		} else {
+			if (p1 !== p2) {
+				return _e.EXIT;
+			}
+			// 3. other face + same piece ... rotate
+/*
+			let f1 = cBoxGeometry.getSurface(this.dragged.faceIx);
+			let f2 = cBoxGeometry.getSurface(test.faceIx);
+			this.buff.rotating.axis = restXYZ(f1.axis, f2.axis);
+			this.buff.rotating.toRight = f1.side * f2.side;
+*/
+		}
+		return _e.READY;
+	},
+	clearRotationGroup : function() {
+		let obj3d = this.buff.rotating.group;
+		let buf = obj3d.children.concat();
+		buf.forEach(e => {
+			cScene.attach(e);
+		});
+		eachXYZ(axis => {
+			obj3d.rotation[axis] = 0;
+		});
+	},
+	rotate : function(in_x, in_y, in_adjust = false) {
+		let obj3d = this.buff.rotating.group;
+		let axis = this.buff.rotating.axis;
+		let toRight = this.buff.rotating.toRight;
+		let initVec = this.buff.rotating.initVec;
+		let currVec = new THREE.Vector2(
+			in_x - this.dragged.position.x,
+			in_y - this.dragged.position.y
+		);
+		let value = currVec.length() / initVec.length() * 0.1;
+		if (Math.abs(currVec.angle() - initVec.angle()) > Math.PI / 2) {
+			value *= -1;
+		}
+		if (in_adjust) {
+			value = adjust_05PI(value);
+		}
+		obj3d.rotation[axis] = toRight * value;
+	}
+};
+
+cCube.init();
+
+const cLight = new THREE.AmbientLight(0xCCCCCC, 1.0);
+
+const cScene = new THREE.Scene();
+
+cCube.objects.forEach(obj3d => {
+	cScene.add(obj3d);
+});
+
+cScene.add(cLight);
+
+const cSphericalViewer = {
+	conf : {
+		move : {
+			speed : 5,
+			threshold : 5,
+			translate : -1
+		},
+		camera : {
+			fov : 45,
+			near : 1,
+			far : 10000
+		}
+	},
+	buffer : new THREE.Spherical(),
+	renderer : null,
+	camera : null,
+	setCameraByAngle(in_delta_theta, in_delta_phi) {
+		this.buffer.setFromVector3(this.camera.position);
+		this.buffer.theta += in_delta_theta;
+		this.buffer.phi -= in_delta_phi;
+		this.buffer.makeSafe();
+		this.camera.position.setFromSpherical(this.buffer); 
+		this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+	},
+	resize : function() {
+		let w = window.innerWidth;
+		let h = window.innerHeight;
+		this.renderer.setPixelRatio(window.devicePixelRatio);
+		this.renderer.setSize(w, h);
+		this.camera.aspect = w / h;
+		this.camera.updateProjectionMatrix();
+	},
+	move : function(in_delta) {
+		if (in_delta.length() < this.conf.move.threshold) {
+			return false;
+		}
+		// move the camera in the opposite direction to the vector
+		let the = in_delta.x * this.conf.move.translate * -1;
+		let phi = in_delta.y * this.conf.move.translate;
+		this.setCameraByAngle(the, phi);
+		return true;
+	},
+	init : function(in_canvas, in_radius) {
+		this.conf.move.translate = this.conf.move.speed / in_radius;
+		this.renderer = new THREE.WebGLRenderer({canvas : in_canvas});
+		this.camera = new THREE.PerspectiveCamera();
+		for (let prop in this.conf.camera) {
+			this.camera[prop] = this.conf.camera[prop];
+		}
+		this.camera.position.set(0, 0, in_radius);
+		this.setCameraByAngle(0, 0);
+		this.resize();
+		(in_self => {
+			window.addEventListener('resize', () => {
+				in_self.resize();
+			});
+		})(this);
+	},
+	render : function(in_scene) {
+		this.renderer.render(in_scene, this.camera);
+	},
+	getSize : function() {
+		let v = this.renderer.getSize(new THREE.Vector2());
+		return {
+			w : v.x,
+			h : v.y
+		};
+	}
+};
+
+cSphericalViewer.init(cCanvas, 1000);
+
+let dragBackground = null;
+
+cCanvas.addEventListener('mousedown', (in_ev) => {
+	let x = in_ev.offsetX;
+	let y = in_ev.offsetY;
+	let size = cSphericalViewer.getSize();
+	if (!cCube.uiDrag(x, y, size.w, size.h, cSphericalViewer.camera)) {
+		dragBackground = new THREE.Vector2(x, y);
+	}
+});
+
+cCanvas.addEventListener('mousemove', (in_ev) => {
+	let x = in_ev.offsetX;
+	let y = in_ev.offsetY;
+	if (cCube.isDragged) {
+		cCube.uiRotate(x, y);
+	} else {
+		if (!dragBackground) {
+			return;
+		}
+		let delta = (new THREE.Vector2(x, y)).sub(dragBackground);
+		if (cSphericalViewer.move(delta)) {
+			// updated
+			dragBackground = new THREE.Vector2(x, y);
+		}
+	}
+});
+
+cCanvas.addEventListener('mouseup', (in_ev) => {
+	let x = in_ev.offsetX;
+	let y = in_ev.offsetY;
+	cCube.uiRelease(x, y);
+	dragBackground = null;
+});
+
+(function tick() {
+	cSphericalViewer.render(cScene);
+	requestAnimationFrame(tick);
+})();
+
+</script>
