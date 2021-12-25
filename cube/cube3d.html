@@ -3,9 +3,15 @@ body {
 	margin: 0;
 	overflow: hidden;
 }
+button {
+	position: absolute;
+	left : 10px;
+	top : 10px;
+}
 </style>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r127/three.min.js'></script>
 <canvas id='myCanvas'></canvas>
+<button>shuffle</button>
 <script>
 
 const cCanvas = document.querySelector('#myCanvas');
@@ -524,6 +530,8 @@ const cLight = new THREE.AmbientLight(0xCCCCCC, 1.0);
 
 const cScene = new THREE.Scene();
 
+cScene.add(cLight);
+
 function getDim()
 {
 	let dim = 3;
@@ -541,9 +549,9 @@ cCube.init(getDim());
 cCube.objects.forEach(obj3d => {
 	cScene.add(obj3d);
 });
-cCube.shuffle();
-
-cScene.add(cLight);
+document.getElementsByTagName('BUTTON').item(0).addEventListener('click', () => {
+	cCube.shuffle();
+});
 
 const cSphericalViewer = {
 	conf : {
