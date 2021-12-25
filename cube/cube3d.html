@@ -10,23 +10,34 @@ body {
 
 const cCanvas = document.querySelector('#myCanvas');
 
+const cAxisList = ['x', 'y', 'z'];
+const cRadianList = [Math.PI / 2, Math.PI, Math.PI * 3 / 2];
+
+Array.prototype.randomElement = function() {
+	return this[Math.floor(Math.random() * this.length)];
+};
+
 function eachXYZ(in_callback)
 {
-	let axisList = ['x', 'y', 'z'];
-	axisList.forEach(axis => {
+	cAxisList.forEach(axis => {
 		(in_callback)(axis);
 	});
 }
 
-function restXYZ(in_axis1, in_axis2)
+function otherXYZ(...in_axisArr)
 {
 	let ret = [];
 	eachXYZ(axis => {
-		if ([in_axis1, in_axis2].indexOf(axis) < 0) {
+		if (in_axisArr.indexOf(axis) < 0) {
 			ret.push(axis);
 		}
 	});
-	return ret[0];
+	return ret;
+}
+
+function restXYZ(in_axis1, in_axis2)
+{
+	return otherXYZ(in_axis1, in_axis2)[0];
 }
 
 function adjust(in_value, in_notch)
@@ -124,15 +135,17 @@ const cBoxGeometry = {
 	insedeColor : 0x222222,
 	surfaceList : [
 		{
+			// orange
 			axis : 'x',
 			side :  1,
-			color : 0xffffff,
+			color : 0xffaa00,
 			rotate : {
 				y : -1,
 				z : 1
 			}
 		},
 		{
+			// red
 			axis : 'x',
 			side : -1,
 			color : 0xff0000,
@@ -142,15 +155,17 @@ const cBoxGeometry = {
 			}
 		},
 		{
+			// white
 			axis : 'y',
 			side :  1,
-			color : 0xffff00,
+			color : 0xffffff,
 			rotate : {
 				z : -1,
 				x : 1
 			}
 		},
 		{
+			// blue
 			axis : 'y',
 			side : -1,
 			color : 0x3333ff,
@@ -160,18 +175,20 @@ const cBoxGeometry = {
 			}
 		},
 		{
+			// yellow
 			axis : 'z',
 			side :  1,
-			color : 0xff9933,
+			color : 0xffff00,
 			rotate : {
 				x : -1,
 				y : 1
 			}
 		},
 		{
+			// green
 			axis : 'z',
 			side : -1,
-			color : 0x33cc33,
+			color : 0x11bb11,
 			rotate : {
 				x : 1,
 				y : -1
@@ -223,10 +240,7 @@ const cBoxGeometry = {
 };
 
 const cCube = {
-	conf : {
-		dim : 3,
-		pieceSize : 100
-	},
+	cubeSize : 360,
 	texture : createCubeTexture(),
 	pieces : [],
 	faceCapture : null,
@@ -245,30 +259,27 @@ const cCube = {
 			initVec : null
 		}
 	},
-	initPieces : function() {
+	initPieces : function(in_dim) {
+		let pieceSize = this.cubeSize / in_dim;
 		let _pos = (in_val) => {
-			return this.conf.pieceSize * (in_val - (this.conf.dim - 1) / 2);
+			return pieceSize * (in_val - (in_dim - 1) / 2);
 		};
-		for (let z = 0; z < this.conf.dim; z++) {
-			for (let y = 0; y < this.conf.dim; y++) {
-				for (let x = 0; x < this.conf.dim; x++) {
-					if ((0 < z) && (z < this.conf.dim - 1) &&
-						(0 < y) && (y < this.conf.dim - 1) &&
-						(0 < x) && (x < this.conf.dim - 1)) {
+		for (let z = 0; z < in_dim; z++) {
+			for (let y = 0; y < in_dim; y++) {
+				for (let x = 0; x < in_dim; x++) {
+					if ((0 < z) && (z < in_dim - 1) &&
+						(0 < y) && (y < in_dim - 1) &&
+						(0 < x) && (x < in_dim - 1)) {
 						// inside cube
 						continue;
 					}
-					let colorList = cBoxGeometry.createColorList(this.conf.dim, x, y, z);
+					let colorList = cBoxGeometry.createColorList(in_dim, x, y, z);
 					colorList.forEach((item, index) => {
 						colorList[index] =
 							new THREE.MeshLambertMaterial({color: item, map: this.texture});
 					});
 					let piece = new THREE.Mesh(
-						new THREE.BoxGeometry(
-							this.conf.pieceSize,
-							this.conf.pieceSize,
-							this.conf.pieceSize
-						),
+						new THREE.BoxGeometry(pieceSize, pieceSize, pieceSize),
 						colorList
 					);
 					piece.position.set(_pos(x), _pos(y), _pos(z));
@@ -277,10 +288,10 @@ const cCube = {
 			}
 		}
 	},
-	init : function() {
+	init : function(in_dim) {
 		// this.faceCapture
 		let delta = 0.1;
-		let size = this.conf.pieceSize * this.conf.dim - delta * 2;
+		let size = this.cubeSize - delta * 2;
 		let trans = new THREE.MeshBasicMaterial({transparent: true, opacity: 0});
 		this.faceCapture = new THREE.Mesh(
 			new THREE.BoxGeometry(size, size, size),
@@ -288,7 +299,7 @@ const cCube = {
 		);
 		this.faceCapture.position.set(0, 0, 0);
 		// this.pieces
-		this.initPieces();
+		this.initPieces(in_dim);
 	},
 	get objects() {
 		return this.pieces.concat(
@@ -371,23 +382,28 @@ const cCube = {
 		if (this.isRotating) {
 			this.rotate(x, y, false);
 		} else {
-			while (true) {
-				let _e = this.preRotateStatus;
+			let maxCnt = 10;
+			while (maxCnt-- > 0) {
+				let _enum = this.preRotateStatus;
 				let status = this.preRotate(x, y);
-				if (status === _e.WOULDBLOCK) {
+				if (status === _enum.WOULDBLOCK1) {
 					x += dx;
 					y += dy;
-				} else {
-					if (status === _e.READY) {
-						this.buff.rotating.initVec = new THREE.Vector2(dx, dy);
-					}
+				} else if (status === _enum.WOULDBLOCK2) {
+					x = in_x;
+					y = in_y;
+					dx *= -1;
+					dy *= -1;
+				} else if (status === _enum.READY) {
+					this.buff.rotating.initVec = new THREE.Vector2(dx, dy);
+					this.buff.rotating.initVec.normalize();
 					break;
 				}
 			}
 		}
 	},
 	uiRelease : function(in_x, in_y) {
-		if (this.isDragged) {
+		if (this.isRotating) {
 			this.rotate(in_x, in_y, true);
 		}
 		this.clearRotationGroup();
@@ -422,93 +438,110 @@ const cCube = {
 		}
 	},
 	preRotateStatus : {
-		WOULDBLOCK : Symbol(),
+		WOULDBLOCK1 : Symbol(),
+		WOULDBLOCK2 : Symbol(),
 		READY : Symbol(),
 		EXIT : Symbol()
 	},
 	preRotate : function(in_x, in_y) {
 		let test = this.hitTestOnDraggedCache(in_x, in_y);
 		if (!test) {
+			// no intersectObject
 			return this.preRotateStatus.EXIT;
 		}
 		let p1 = this.dragged.piece;
 		let p2 = test.piece;
-		let _e = this.preRotateStatus;
+		let _enum = this.preRotateStatus;
 		if (cBoxGeometry.sameSurface(this.dragged.faceIx, test.faceIx)) {
 			if (p1 === p2) {
 				// 1. same face + same piece ... continue to search
-				return _e.WOULDBLOCK;
+				return _enum.WOULDBLOCK1;
 			} else {
 				let axis = this.neighborAxis(p1, p2);
 				if (!axis) {
-					return _e.EXIT;
+					// not neighbor
+					return _enum.EXIT;
 				}
 				// 2. same face + other piece (neighbor) ... rotate
 				let face = cBoxGeometry.getSurface(this.dragged.faceIx);
 				let rest = restXYZ(axis, face.axis);
 				this.buff.rotating.axis = rest;
-				this.buff.rotating.toRight
-					= face.rotate[axis] * ((p1.position[axis] < p2.position[axis]) ? -1 : 1);
-				for (let i = 0; i < this.pieces.length; i++) {
-					let piece = this.pieces[i];
-					if (this.isSame(piece.position[rest], this.dragged.piece.position[rest])) {
-						this.buff.rotating.group.add(piece);
-					}
-				}
+				let direction = (p1.position[axis] < p2.position[axis]) ? -1 : 1;
+				this.buff.rotating.toRight = face.rotate[axis] * direction;
+				this.setupRotationGroup(rest, this.dragged.piece);
+				return _enum.READY;
 			}
 		} else {
 			if (p1 !== p2) {
-				return _e.EXIT;
+				// not neighbor
+				return _enum.EXIT;
+			} else {
+				// 3. other face + same piece ... continue to search
+				return _enum.WOULDBLOCK2;
 			}
-			// 3. other face + same piece ... rotate
-/*
-			let f1 = cBoxGeometry.getSurface(this.dragged.faceIx);
-			let f2 = cBoxGeometry.getSurface(test.faceIx);
-			this.buff.rotating.axis = restXYZ(f1.axis, f2.axis);
-			this.buff.rotating.toRight = f1.side * f2.side;
-*/
 		}
-		return _e.READY;
+	},
+	setupRotationGroup : function(in_axis, in_target) {
+		for (let i = 0; i < this.pieces.length; i++) {
+			let piece = this.pieces[i];
+			if (this.isSame(piece.position[in_axis], in_target.position[in_axis])) {
+				this.buff.rotating.group.add(piece);
+			}
+		}
 	},
 	clearRotationGroup : function() {
-		let obj3d = this.buff.rotating.group;
-		let buf = obj3d.children.concat();
-		buf.forEach(e => {
+		let ro = this.buff.rotating;
+		(ro.group.children.concat()).forEach(e => {
 			cScene.attach(e);
 		});
 		eachXYZ(axis => {
-			obj3d.rotation[axis] = 0;
+			ro.group.rotation[axis] = 0;
 		});
 	},
 	rotate : function(in_x, in_y, in_adjust = false) {
-		let obj3d = this.buff.rotating.group;
-		let axis = this.buff.rotating.axis;
-		let toRight = this.buff.rotating.toRight;
-		let initVec = this.buff.rotating.initVec;
-		let currVec = new THREE.Vector2(
-			in_x - this.dragged.position.x,
-			in_y - this.dragged.position.y
-		);
-		let value = currVec.length() / initVec.length() * 0.1;
-		if (Math.abs(currVec.angle() - initVec.angle()) > Math.PI / 2) {
-			value *= -1;
-		}
+		let ro = this.buff.rotating;
+		let dx = in_x - this.dragged.position.x;
+		let dy = in_y - this.dragged.position.y;
+		let value = ro.initVec.dot(new THREE.Vector2(dx, dy)) * 0.01;
 		if (in_adjust) {
 			value = adjust_05PI(value);
 		}
-		obj3d.rotation[axis] = toRight * value;
+		ro.group.rotation[ro.axis] = ro.toRight * value;
+	},
+	shuffle : function(in_cnt = 30) {
+		let cnt = in_cnt;
+		while (cnt-- > 0) {
+			let axis = cAxisList.randomElement();
+			let target = this.pieces.randomElement();
+			this.setupRotationGroup(axis, target);
+			this.buff.rotating.group.rotation[axis] = cRadianList.randomElement();
+			this.clearRotationGroup();
+		}
 	}
 };
-
-cCube.init();
 
 const cLight = new THREE.AmbientLight(0xCCCCCC, 1.0);
 
 const cScene = new THREE.Scene();
 
+function getDim()
+{
+	let dim = 3;
+	let whiteList = [2, 3, 4, 5, 6];
+	if (location.hash) {
+		let hash = Number(location.hash.substr(1));
+		if (whiteList.indexOf(hash) !== -1) {
+			dim = hash;
+		}
+	}
+	return dim;
+}
+
+cCube.init(getDim());
 cCube.objects.forEach(obj3d => {
 	cScene.add(obj3d);
 });
+cCube.shuffle();
 
 cScene.add(cLight);
 
