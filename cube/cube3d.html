@@ -3,15 +3,22 @@ body {
 	margin: 0;
 	overflow: hidden;
 }
-button {
+#control {
 	position: absolute;
 	left : 10px;
 	top : 10px;
 }
+.size {
+	width : 2em;
+}
 </style>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r127/three.min.js'></script>
 <canvas id='myCanvas'></canvas>
-<button>shuffle</button>
+<span id='control'>
+<button id='dec' class='size'>-</button>
+<button id='shuffle'>shuffle</button>
+<button id='inc' class='size'>+</button>
+</span>
 <script>
 
 const cCanvas = document.querySelector('#myCanvas');
@@ -545,12 +552,36 @@ function getDim()
 	return dim;
 }
 
+function changeDim(in_inc)
+{
+	let dim = getDim();
+	if (in_inc) {
+		dim++;
+	} else {
+		dim--;
+	}
+	location.hash = '#' + dim;
+	location.reload();
+}
+
 cCube.init(getDim());
 cCube.objects.forEach(obj3d => {
 	cScene.add(obj3d);
 });
-document.getElementsByTagName('BUTTON').item(0).addEventListener('click', () => {
+
+function handleClick(in_id, in_callback)
+{
+	document.querySelector('#' + in_id).addEventListener('click', in_callback);
+}
+
+handleClick('shuffle', () => {
 	cCube.shuffle();
+});
+handleClick('inc', () => {
+	changeDim(true);
+});
+handleClick('dec', () => {
+	changeDim(false);
 });
 
 const cSphericalViewer = {
