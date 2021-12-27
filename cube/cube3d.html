@@ -23,6 +23,10 @@ body {
 
 const cCanvas = document.querySelector('#myCanvas');
 
+const cWorldRadius = 1000;
+const cCubeSize = 360;
+const cFogMargin = 140;
+
 const cAxisList = ['x', 'y', 'z'];
 const cRadianList = [Math.PI / 2, Math.PI, Math.PI * 3 / 2];
 
@@ -201,7 +205,7 @@ const cBoxGeometry = {
 			// green
 			axis : 'z',
 			side : -1,
-			color : 0x11bb11,
+			color : 0x33cc33,
 			rotate : {
 				x : 1,
 				y : -1
@@ -253,7 +257,7 @@ const cBoxGeometry = {
 };
 
 const cCube = {
-	cubeSize : 360,
+	cubeSize : cCubeSize,
 	texture : createCubeTexture(),
 	pieces : [],
 	faceCapture : null,
@@ -536,6 +540,11 @@ const cCube = {
 const cLight = new THREE.AmbientLight(0xCCCCCC, 1.0);
 
 const cScene = new THREE.Scene();
+cScene.fog = new THREE.Fog(
+	0x333333,
+	cWorldRadius - cCubeSize / 2 - cFogMargin,
+	cWorldRadius + cCubeSize / 2 + cFogMargin
+);
 
 cScene.add(cLight);
 
@@ -654,7 +663,7 @@ const cSphericalViewer = {
 	}
 };
 
-cSphericalViewer.init(cCanvas, 1000);
+cSphericalViewer.init(cCanvas, cWorldRadius);
 
 let dragBackground = null;
 
@@ -684,11 +693,18 @@ cCanvas.addEventListener('mousemove', (in_ev) => {
 	}
 });
 
-cCanvas.addEventListener('mouseup', (in_ev) => {
-	let x = in_ev.offsetX;
-	let y = in_ev.offsetY;
-	cCube.uiRelease(x, y);
+function release(in_x, in_y)
+{
+	cCube.uiRelease(in_x, in_y);
 	dragBackground = null;
+}
+
+cCanvas.addEventListener('mouseup', (in_ev) => {
+	release(in_ev.offsetX, in_ev.offsetY);
+});
+
+cCanvas.addEventListener('mouseout', (in_ev) => {
+	release(in_ev.offsetX, in_ev.offsetY);
 });
 
 (function tick() {
