@@ -8,16 +8,18 @@ body {
 	left : 10px;
 	top : 10px;
 }
-.size {
-	width : 2em;
+#dec, #shuffle, #inc {
+	font-size: 1.5em;
+	min-width : 2em;
+	font-family: monospace;;
 }
 </style>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r127/three.min.js'></script>
 <canvas id='myCanvas'></canvas>
 <span id='control'>
-<button id='dec' class='size'>-</button>
+<button id='dec'>-</button>
 <button id='shuffle'>shuffle</button>
-<button id='inc' class='size'>+</button>
+<button id='inc'>+</button>
 </span>
 <script>
 
@@ -25,7 +27,7 @@ const cCanvas = document.querySelector('#myCanvas');
 
 const cWorldRadius = 1000;
 const cCubeSize = 360;
-const cFogMargin = 140;
+const cFogMargin = 100;
 
 const cAxisList = ['x', 'y', 'z'];
 const cRadianList = [Math.PI / 2, Math.PI, Math.PI * 3 / 2];
@@ -542,7 +544,7 @@ const cLight = new THREE.AmbientLight(0xCCCCCC, 1.0);
 const cScene = new THREE.Scene();
 cScene.fog = new THREE.Fog(
 	0x333333,
-	cWorldRadius - cCubeSize / 2 - cFogMargin,
+	cWorldRadius - cCubeSize / 2,
 	cWorldRadius + cCubeSize / 2 + cFogMargin
 );
 
@@ -705,6 +707,61 @@ cCanvas.addEventListener('mouseup', (in_ev) => {
 
 cCanvas.addEventListener('mouseout', (in_ev) => {
 	release(in_ev.offsetX, in_ev.offsetY);
+});
+
+const cConvertTable = [
+	{
+		src : 'touchstart',
+		dst : 'mousedown'
+	},
+	{
+		src : 'touchmove',
+		dst : 'mousemove'
+	},
+	{
+		src : 'touchend',
+		dst : 'mouseup'
+	},
+	{
+		src : 'touchleave',
+		dst : 'mouseout'
+	}
+];
+
+cConvertTable.forEach(mapping => {
+	cCanvas.addEventListener(mapping.src, (in_ev) => {
+		in_ev.preventDefault();
+		in_ev.stopPropagation();
+		if (in_ev.touches.length > 1) {
+			return;
+		}
+		var ev = document.createEvent('MouseEvents');
+		ev.initMouseEvent(
+			// tyoe
+			mapping.dst,
+			// canBubble
+			true,
+			// cancelable
+			true,
+			// view
+			window,
+			// clickCount
+			0,
+			in_ev.changedTouches[0].screenX,
+			in_ev.changedTouches[0].screenY,
+			in_ev.changedTouches[0].clientX,
+			in_ev.changedTouches[0].clientY,
+			in_ev.ctrlKey,
+			in_ev.altKey,
+			in_ev.shiftKey,
+			in_ev.metaKey,
+			// button
+			0,
+			// relatedTarget
+			null
+		);
+		in_ev.target.dispatchEvent(ev);
+	});
 });
 
 (function tick() {
