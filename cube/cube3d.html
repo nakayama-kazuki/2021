@@ -11,8 +11,8 @@ body {
 	top : 10px;
 }
 #dec, #shuffle, #inc {
-	font-size: 1.5em;
-	min-width : 2em;
+	font-size: 1.2em;
+	min-width : 1.5em;
 	font-family: monospace;;
 }
 </style>
@@ -187,20 +187,20 @@ const cBoxGeometry = {
 			}
 		},
 		{
-			// blue
+			// yellow
 			axis : 'y',
 			side : -1,
-			color : 0x3333ff,
+			color : 0xffff00,
 			rotate : {
 				z : 1,
 				x : -1
 			}
 		},
 		{
-			// yellow
+			// blue
 			axis : 'z',
 			side :  1,
-			color : 0xffff00,
+			color : 0x3333ff,
 			rotate : {
 				x : -1,
 				y : 1
@@ -600,16 +600,9 @@ handleClick('dec', () => {
 
 const cSphericalViewer = {
 	conf : {
-		move : {
-			speed : 5,
-			threshold : 5,
-			translate : -1
-		},
-		camera : {
-			fov : 45,
-			near : 1,
-			far : 10000
-		}
+		speed : 5,
+		threshold : 5,
+		translate : -1
 	},
 	buffer : new THREE.Spherical(),
 	renderer : null,
@@ -631,22 +624,22 @@ const cSphericalViewer = {
 		this.camera.updateProjectionMatrix();
 	},
 	move : function(in_delta) {
-		if (in_delta.length() < this.conf.move.threshold) {
+		if (in_delta.length() < this.conf.threshold) {
 			return false;
 		}
 		// move the camera in the opposite direction to the vector
-		let the = in_delta.x * this.conf.move.translate * -1;
-		let phi = in_delta.y * this.conf.move.translate;
+		let the = in_delta.x * this.conf.translate * -1;
+		let phi = in_delta.y * this.conf.translate;
 		this.setCameraByAngle(the, phi);
 		return true;
 	},
 	init : function(in_canvas, in_radius) {
-		this.conf.move.translate = this.conf.move.speed / in_radius;
+		this.conf.translate = this.conf.speed / in_radius;
 		this.renderer = new THREE.WebGLRenderer({canvas : in_canvas});
 		this.camera = new THREE.PerspectiveCamera();
-		for (let prop in this.conf.camera) {
-			this.camera[prop] = this.conf.camera[prop];
-		}
+		this.camera.fov = 45;
+		this.camera.near = 1;
+		this.camera.far = in_radius * 2;
 		this.camera.position.set(0, 0, in_radius);
 		this.setCameraByAngle(0, 0);
 		this.resize();
@@ -669,6 +662,7 @@ const cSphericalViewer = {
 };
 
 cSphericalViewer.init(cCanvas, cWorldRadius);
+cSphericalViewer.move(new THREE.Vector2(100, 100));
 
 let dragBackground = null;
 
@@ -698,18 +692,18 @@ cCanvas.addEventListener('mousemove', (in_ev) => {
 	}
 });
 
-function release(in_x, in_y)
-{
-	cCube.uiRelease(in_x, in_y);
-	dragBackground = null;
-}
-
 cCanvas.addEventListener('mouseup', (in_ev) => {
-	release(in_ev.offsetX, in_ev.offsetY);
+	let x = in_ev.offsetX;
+	let y = in_ev.offsetY;
+	cCube.uiRelease(x, y);
+	dragBackground = null;
 });
 
 cCanvas.addEventListener('mouseout', (in_ev) => {
-	release(in_ev.offsetX, in_ev.offsetY);
+	let x = in_ev.offsetX;
+	let y = in_ev.offsetY;
+	cCube.uiRelease(x, y);
+	dragBackground = null;
 });
 
 const cConvertTable = [
@@ -738,9 +732,9 @@ cConvertTable.forEach(mapping => {
 		if (in_ev.touches.length > 1) {
 			return;
 		}
-		var ev = document.createEvent('MouseEvents');
+		let ev = document.createEvent('MouseEvents');
 		ev.initMouseEvent(
-			// tyoe
+			// type
 			mapping.dst,
 			// canBubble
 			true,

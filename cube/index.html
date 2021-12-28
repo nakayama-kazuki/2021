@@ -1,0 +1,69 @@
+<html>
+<head>
+<meta name='viewport' content='width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1' />
+<style>
+body {
+	margin: 0px;
+	overflow: hidden;
+	background-color: black;
+}
+iframe {
+	margin: 0px;
+	border: none;
+	display: block;
+	visibility: hidden;
+	position: absolute;
+}
+</style>
+</head>
+<body>
+<iframe src='cube3d.html' frameborder='0' id='m'></iframe>
+<iframe src='google.html' frameborder='0' id='a'></iframe>
+<script>
+
+HTMLElement.prototype.setXYWH = function(x, y, w, h) {
+	let s = this.style;
+	if (w * h > 0) {
+		s.left = x + 'px';
+		s.top = y + 'px';
+		s.width = w + 'px';
+		s.height = h + 'px';
+		s.visibility = 'visible';
+	} else {
+		s.visibility = 'hidden';
+	}
+}
+
+function resize()
+{
+	let size = {
+		m : 2,
+		a : 1
+	};
+	let ratio = size.m / (size.m + size.a);
+	let w = window.innerWidth;
+	let h = window.innerHeight;
+	let m = document.querySelector('#m');
+	let a = document.querySelector('#a');
+	if (w * ratio > h) {
+		m.setXYWH(0, 0, w * ratio, h);
+		a.setXYWH(w * ratio, 0, w * (1 - ratio), h);
+	} else {
+		if (h * ratio > w) {
+			m.setXYWH(0, 0, w, h * ratio);
+			a.setXYWH(0, h * ratio, w, h * (1 - ratio));
+		} else {
+			m.setXYWH(0, 0, w, h);
+			a.setXYWH(0, 0, 0, 0);
+		}
+	}
+}
+
+window.addEventListener('resize', resize);
+
+resize();
+
+</script>
+</body>
+</html>
+
