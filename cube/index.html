@@ -23,9 +23,11 @@ iframe {
 </style>
 </head>
 <body>
-<div id='main'><iframe src='cube3d.html' frameborder='0'></iframe></div>
+<div id='main'><iframe id='cube' frameborder='0'></iframe></div>
 <div id='google'></div>
 <script>
+
+document.querySelector('#cube').src = 'cube3d.html' + location.hash;
 
 HTMLElement.prototype.setXYWH = function(x, y, w, h) {
 	let s = this.style;
