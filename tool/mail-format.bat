@@ -2,7 +2,7 @@
 
 function remove_safelinks($in_line)
 {
-	$safelinks = '/https\:\/\/.+\?url\=(https?\%3A\%2F\%2F[^\&]+).+\&reserved\=0/';
+	$safelinks = '/https\:\/\/.+\?url\=(https?\%3A\%2F\%2F[^\&]+).+reserved\=0/';
 	if (preg_match($safelinks, $in_line, $matches) === 0) {
 		return $in_line;
 	} else {
