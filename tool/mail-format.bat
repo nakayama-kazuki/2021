@@ -16,6 +16,11 @@ function remove_safelinks($in_str)
 	}
 }
 
+function remove_lt_email_gt($in_str)
+{
+	return preg_replace('/<[^@]+@[^>]+>/', '', $in_str);
+}
+
 function remove_space_in_gt($in_str)
 {
 	$parts = explode(GT, $in_str);
@@ -33,11 +38,6 @@ function remove_space_in_gt($in_str)
 		}
 	}
 	return implode(GT, $parts);
-}
-
-function remove_lt_email_gt($in_str)
-{
-	return preg_replace('/<[^@]+@[^@]+>/', '', $in_str);
 }
 
 function make_space($in_repeat)
@@ -73,8 +73,8 @@ function echo_formatted_mail($in_lines)
 {
 	$filters = array(
 		'remove_safelinks',
-		'remove_space_in_gt',
 		'remove_lt_email_gt',
+		'remove_space_in_gt',
 		'replace_tab_to_space',
 		'replace_blankline'
 	);
@@ -122,6 +122,7 @@ aaaa
 
 	aaaa
 		aaaa <hoge@yahoo.co.jp>; aaaa
+		aaaa <fuga@yahoo.co.jp>     >> >> >  > aaaa
 	aaaa
     
 
