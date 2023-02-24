@@ -12,7 +12,7 @@ foreach ($line in $copiedText) {
 
 if ($urls.Length -gt 0) {
 	$url = $urls -join " ";
-	$chrome = "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe";
+	$chrome = "C:\Program Files\Google\Chrome\Application\chrome.exe";
 	Start-Process -FilePath $chrome -ArgumentList "--incognito --new-window $url";
 } else {
 	[System.Windows.Forms.MessageBox]::Show("404 URL Not Found");
