@@ -6,6 +6,11 @@ define('CRLF', chr(10));
 define('SPACE', chr(32));
 define('TAB2SP', 4);
 
+function convert_encoding($in_str)
+{
+	return mb_convert_encoding($in_str, 'SJIS');
+}
+
 function remove_safelinks($in_str)
 {
 	$safelinks = '/https\:\/\/.+\?url\=(https?\%3A\%2F\%2F[^\&]+).+reserved\=0/';
@@ -72,6 +77,7 @@ function count_left_space($in_line)
 function echo_formatted_mail($in_lines)
 {
 	$filters = array(
+		'convert_encoding',
 		'remove_safelinks',
 		'remove_lt_email_gt',
 		'remove_space_in_gt',
