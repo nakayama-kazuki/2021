@@ -1,4 +1,4 @@
-@powershell "(Get-Clipboard -Format Image).Save([console]::OpenStandardOutput(), [System.Drawing.Imaging.ImageFormat]::Png);" | "C:\xampp\php\php" -r "$PHPCODE = implode('', array_slice(file('%0'), 1)); eval($PHPCODE);" & goto:eof
+@powershell "(Get-Clipboard -Format Image).Save([console]::OpenStandardOutput(), [System.Drawing.Imaging.ImageFormat]::Png);" | "C:\xampp\php\php" -r "$PHPCODE = implode('', array_slice(file('%0'), 1)); eval($PHPCODE);" %1 & goto:eof
 
 define('MAX_BIT', 8);
 define('AUTO_DETECT_PALETTE', TRUE);
@@ -67,12 +67,16 @@ if ($im === FALSE) {
 	}
 }
 
-define('WCAP', 1000);
+if (count($argv) > 1) {
+	$wcap = $argv[1];
+} else {
+	$wcap = 1000;
+}
 
 $srcw = imagesx($im);
 $srch = imagesy($im);
-$dstw = ($srcw > WCAP) ? WCAP : $srcw;
-$dsth = ($srcw > WCAP) ? $srch * WCAP / $srcw : $srch;
+$dstw = ($srcw > $wcap) ? $wcap : $srcw;
+$dsth = ($srcw > $wcap) ? $srch * $wcap / $srcw : $srch;
 
 $im_dst = imagecreatetruecolor($dstw, $dsth);
 imagecopyresampled($im_dst, $im, 0, 0, 0, 0, $dstw, $dsth, $srcw, $srch);
