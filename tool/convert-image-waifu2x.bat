@@ -13,9 +13,12 @@ function png_file($in_path)
 	return $filename;
 }
 
-function png_tmp_file()
+function png_tmp_file($in_create = FALSE)
 {
 	$filename = sys_get_temp_dir() . '/' . md5(rand()) . '.png';
+	if ($in_create) {
+		touch($filename);
+	}
 	register_shutdown_function(function($in_filename) {
 		if (file_exists($in_filename)) {
 			unlink($in_filename);
