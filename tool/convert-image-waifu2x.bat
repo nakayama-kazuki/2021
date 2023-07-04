@@ -24,20 +24,22 @@ function png_tmp_file()
 	return $filename;
 }
 
+echo "step1 : copy from clipbord ...\n";
 $im1 = @imagecreatefrompng('php://stdin');
 if (!$im1) {
 	echo "no image in clipbord ...\n";
 	exit;
 }
 $file1 = png_tmp_file();
-$file2 = png_tmp_file();
 imagepng($im1, $file1);
 
-$command = 'C:\kanakaya\git\waifu2x-caffe\waifu2x-caffe-cui.exe' . " -i {$file1} -o {$file2} -m noise -p cpu";
-echo "now converting by waifu2x-caffe ...\n";
+echo "step2 : now converting by waifu2x-caffe ...\n";
+$file2 = png_tmp_file();
+$command = 'C:\kanakaya\git\waifu2x-caffe\waifu2x-caffe-cui.exe' . " -i {$file1} -o {$file2} -m noise -n 1 -p cpu";
 exec($command, $message, $rcode);
 imagedestroy($im1);
 
+echo "step3 : write png file ...\n";
 $im2 = @imagecreatefrompng($file2);
 imagetruecolortopalette($im2, FALSE, 256);
 imagepng($im2, png_file(__DIR__));
