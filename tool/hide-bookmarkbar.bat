@@ -11,5 +11,3 @@ foreach($process in $ps) {
 		[System.Windows.Forms.SendKeys]::SendWait("^+b");
 	}
 }
-
-#>
