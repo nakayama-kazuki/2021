@@ -8,7 +8,6 @@ foreach($process in $ps) {
 	if ($process.MainWindowHandle -ne 0)  {
 		write-host $process.MainWindowTitle
 		[Microsoft.VisualBasic.Interaction]::AppActivate($process.ID);
-		#[System.Windows.Forms.SendKeys]::SendWait("+(%({TAB}))");
 		[System.Windows.Forms.SendKeys]::SendWait("^+b");
 	}
 }
