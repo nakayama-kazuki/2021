@@ -1,4 +1,6 @@
-@powershell "$THISFILE=\"%~f0\"; $PSCODE=[scriptblock]::create((Get-Content $THISFILE | Where-Object {$_.readcount -gt 1}) -join \"`n\"); & $PSCODE" & goto:eof
+@powershell "$THISFILE=\"%~f0\"; $PSCODE=[scriptblock]::create((Get-Content $THISFILE | Where-Object {$_.readcount -gt 1}) -join \"`n\"); & $PSCODE '%1'" & goto:eof
+
+param([string]$arg)
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -27,14 +29,20 @@ Add-Type @"
 
 Set-Variable -Name FILEPATH -Value ([System.Environment]::GetFolderPath('Desktop')) -Option Constant
 Set-Variable -Name IMAGEMAGICK -Value 'C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\convert.exe' -Option Constant
+Set-Variable -Name DEFAULTAPP -Value 'chrome' -Option Constant
 
 ### 0. settings ###
 
 Set-Variable -Name FILENAME -Value 'screenshot.png' -Option Constant
-Set-Variable -Name TARGETAPP -Value 'chrome' -Option Constant
-Set-Variable -Name START_Y -Value 120 -Option Constant
+Set-Variable -Name BROWSERUI_HEIGHT -Value 120 -Option Constant
 
-### 1. find chrome window ###
+### 1. find $TARGETAPP window ###
+
+if ([string]::IsNullOrWhiteSpace($arg)) {
+	Set-Variable -Name TARGETAPP -Value $DEFAULTAPP -Option Constant
+} else {
+	Set-Variable -Name TARGETAPP -Value $arg -Option Constant
+}
 
 $ps = Get-Process -Name $TARGETAPP -ErrorAction SilentlyContinue
 if ($null -eq $ps) {
@@ -60,36 +68,38 @@ if (!$found) {
 ### 2. copy whole primary screen to $screen ###
 
 $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-$screen = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
+$screenBmp = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
 # Write-Host "W:$($bounds.Width), H:$($bounds.Height)"
 
-$graphics = [System.Drawing.Graphics]::FromImage($screen)
+$graphics = [System.Drawing.Graphics]::FromImage($screenBmp)
 $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
-[System.Windows.Forms.Clipboard]::SetImage($screen)
+[System.Windows.Forms.Clipboard]::SetImage($screenBmp)
 
 ### 3. crop '2' using '1' ###
 
 [WINDOWS_API_RECT] $windowRect = New-Object WINDOWS_API_RECT
-[WINDOWS_API]::GetWindowRect($process.MainWindowHandle, [ref] $windowRect)
+$res = [WINDOWS_API]::GetWindowRect($process.MainWindowHandle, [ref] $windowRect)
+# Write-Host "R:$($windowRect.R), T:$($windowRect.T), L:$($windowRect.L), B:$($windowRect.B)"
 
 [WINDOWS_API_RECT] $clientRect = New-Object WINDOWS_API_RECT
-[WINDOWS_API]::GetClientRect($process.MainWindowHandle, [ref] $clientRect)
+$res = [WINDOWS_API]::GetClientRect($process.MainWindowHandle, [ref] $clientRect)
+# Write-Host "R:$($clientRect.R), T:$($clientRect.T), L:$($clientRect.L), B:$($clientRect.B)"
 
 $marginX = $windowRect.R - $windowRect.L - $clientRect.R
 $marginY = $windowRect.B - $windowRect.T - $clientRect.B
 
-$browserRect = New-Object System.Drawing.Rectangle(
+$targetRect = New-Object System.Drawing.Rectangle(
 	($windowRect.L + $marginX / 2),
-	($windowRect.T + $START_Y),
+	($windowRect.T + $BROWSERUI_HEIGHT),
 	($windowRect.R - $windowRect.L - $marginX),
-	($windowRect.B - $windowRect.T - $marginY - $START_Y)
+	($windowRect.B - $windowRect.T - $marginY - $BROWSERUI_HEIGHT)
 )
 
 $savePath = Join-Path -Path $FILEPATH -ChildPath $FILENAME
-$browserPane = $screen.Clone($browserRect, $screen.PixelFormat)
-$browserPane.Save($savePath, [System.Drawing.Imaging.ImageFormat]::Png)
+$targetBmp = $screenBmp.Clone($targetRect, $screenBmp.PixelFormat)
+$targetBmp.Save($savePath, [System.Drawing.Imaging.ImageFormat]::Png)
 Start-Process $IMAGEMAGICK -ArgumentList $savePath, '-colors 256', '-depth 8', $savePath -NoNewWindow -Wait
 
 $graphics.Dispose()
-$screen.Dispose()
-$browserPane.Dispose()
+$screenBmp.Dispose()
+$targetBmp.Dispose()
