@@ -1,6 +1,28 @@
-@powershell "$THISFILE=\"%~f0\"; $PSCODE=[scriptblock]::create((Get-Content $THISFILE | Where-Object {$_.readcount -gt 1}) -join \"`n\"); & $PSCODE '%1'" & goto:eof
+@powershell "$THISFILE=\"%~f0\"; $PSCODE=[scriptblock]::create((Get-Content $THISFILE | Where-Object {$_.readcount -gt 1}) -join \"`n\"); & $PSCODE %*" & goto:eof
 
-param([string]$arg)
+param([string[]]$args)
+
+$OPTION = @{}
+for ($i = 0; $i -lt $args.Length; $i++) {
+	if ($args[$i] -match '^-(.*)') {
+		$OPTION[$matches[1]] = $args[++$i]
+	}
+}
+
+# -t : target application
+if ($OPTION.ContainsKey('t')) {
+	Set-Variable -Name TARGETAPP -Value "$($OPTION['t'])" -Option Constant
+} else {
+	Set-Variable -Name TARGETAPP -Value 'chrome' -Option Constant
+}
+
+# -r : resize option for imagemagick
+if ($OPTION.ContainsKey('r')) {
+	Set-Variable -Name RESIZE -Value "-resize $($OPTION['r'])" -Option Constant
+	# Write-Host "resize to $($OPTION['r'])"
+} else {
+	Set-Variable -Name RESIZE -Value '-resize 100%' -Option Constant
+}
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -28,21 +50,14 @@ Add-Type @"
 "@
 
 Set-Variable -Name FILEPATH -Value ([System.Environment]::GetFolderPath('Desktop')) -Option Constant
-Set-Variable -Name IMAGEMAGICK -Value 'C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\convert.exe' -Option Constant
-Set-Variable -Name DEFAULTAPP -Value 'chrome' -Option Constant
+Set-Variable -Name IMAGEMAGICK -Value 'C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe' -Option Constant
 
 ### 0. settings ###
 
-Set-Variable -Name FILENAME -Value 'screenshot.png' -Option Constant
+Set-Variable -Name PNG_PREFIX -Value 'screenshot' -Option Constant
 Set-Variable -Name BROWSERUI_HEIGHT -Value 120 -Option Constant
 
 ### 1. find $TARGETAPP window ###
-
-if ([string]::IsNullOrWhiteSpace($arg)) {
-	Set-Variable -Name TARGETAPP -Value $DEFAULTAPP -Option Constant
-} else {
-	Set-Variable -Name TARGETAPP -Value $arg -Option Constant
-}
 
 $ps = Get-Process -Name $TARGETAPP -ErrorAction SilentlyContinue
 if ($null -eq $ps) {
@@ -95,10 +110,16 @@ $targetRect = New-Object System.Drawing.Rectangle(
 	($windowRect.B - $windowRect.T - $marginY - $BROWSERUI_HEIGHT)
 )
 
-$savePath = Join-Path -Path $FILEPATH -ChildPath $FILENAME
+$index = 0
+
+do {
+	$savePath = Join-Path -Path $FILEPATH -ChildPath "$($PNG_PREFIX)-$(('{0:D3}' -f $index)).png"
+	$index++
+} while (Test-Path $savePath)
+
 $targetBmp = $screenBmp.Clone($targetRect, $screenBmp.PixelFormat)
 $targetBmp.Save($savePath, [System.Drawing.Imaging.ImageFormat]::Png)
-Start-Process $IMAGEMAGICK -ArgumentList $savePath, '-colors 256', '-depth 8', $savePath -NoNewWindow -Wait
+Start-Process $IMAGEMAGICK -ArgumentList $savePath, '-colors 256', '-depth 8', $RESIZE, $savePath -NoNewWindow -Wait
 
 $graphics.Dispose()
 $screenBmp.Dispose()
