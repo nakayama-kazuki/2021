@@ -52,35 +52,45 @@ Add-Type @"
 Set-Variable -Name FILEPATH -Value ([System.Environment]::GetFolderPath('Desktop')) -Option Constant
 Set-Variable -Name IMAGEMAGICK -Value 'C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe' -Option Constant
 
-### 0. settings ###
+<#
+	0. settings
+#>
 
-Set-Variable -Name PNG_PREFIX -Value 'screenshot' -Option Constant
+Set-Variable -Name PNG_PREFIX -Value ($TARGETAPP + '-screen') -Option Constant
 Set-Variable -Name BROWSERUI_HEIGHT -Value 120 -Option Constant
 
-### 1. find $TARGETAPP window ###
+<#
+	1. find $TARGETAPP window
+#>
 
-$ps = Get-Process -Name $TARGETAPP -ErrorAction SilentlyContinue
-if ($null -eq $ps) {
-	Write-Host "error : can not find $($TARGETAPP)"
+function getProcess($in_app) {
+	$processList = Get-Process -Name $in_app -ErrorAction SilentlyContinue
+	if ($null -eq $processList) {
+		Write-Host "error : can not find $($in_app)"
+		return $null
+	}
+	foreach($process in $processList) {
+		if ($process.MainWindowHandle -eq 0)  {
+			continue
+		}
+		if (![WINDOWS_API]::IsIconic($process.MainWindowHandle)) {
+			[Microsoft.VisualBasic.Interaction]::AppActivate($process.ID)
+			return $process
+		}
+	}
+	Write-Host "error : $($in_app) is minimized"
+	return $null
+}
+
+$process = getProcess $TARGETAPP
+
+if (!$process) {
 	exit
 }
-$found = $false
-foreach($process in $ps) {
-	if ($process.MainWindowHandle -eq 0)  {
-		continue
-	}
-	if (![WINDOWS_API]::IsIconic($process.MainWindowHandle)) {
-		$found = $true
-		[Microsoft.VisualBasic.Interaction]::AppActivate($process.ID)
-		break
-	}
-}
-if (!$found) {
-	Write-Host "error : $($TARGETAPP) is minimized"
-	exit
-}
 
-### 2. copy whole primary screen to $screen ###
+<#
+	2. copy whole primary screen to $screen
+#>
 
 $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
 $screenBmp = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
@@ -90,15 +100,17 @@ $graphics = [System.Drawing.Graphics]::FromImage($screenBmp)
 $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
 [System.Windows.Forms.Clipboard]::SetImage($screenBmp)
 
-### 3. crop '2' using '1' ###
+<#
+	3. crop $screen of '2' using rect of '1'
+#>
 
 [WINDOWS_API_RECT] $windowRect = New-Object WINDOWS_API_RECT
 $res = [WINDOWS_API]::GetWindowRect($process.MainWindowHandle, [ref] $windowRect)
-# Write-Host "R:$($windowRect.R), T:$($windowRect.T), L:$($windowRect.L), B:$($windowRect.B)"
+# Write-Host "L:$($windowRect.L), T:$($windowRect.T), R:$($windowRect.R), B:$($windowRect.B)"
 
 [WINDOWS_API_RECT] $clientRect = New-Object WINDOWS_API_RECT
 $res = [WINDOWS_API]::GetClientRect($process.MainWindowHandle, [ref] $clientRect)
-# Write-Host "R:$($clientRect.R), T:$($clientRect.T), L:$($clientRect.L), B:$($clientRect.B)"
+# Write-Host "L:$($clientRect.L), T:$($clientRect.T), R:$($clientRect.R), B:$($clientRect.B)"
 
 $marginX = $windowRect.R - $windowRect.L - $clientRect.R
 $marginY = $windowRect.B - $windowRect.T - $clientRect.B
@@ -110,13 +122,16 @@ $targetRect = New-Object System.Drawing.Rectangle(
 	($windowRect.B - $windowRect.T - $marginY - $BROWSERUI_HEIGHT)
 )
 
-$index = 0
+function getSavePath() {
+	$index = 0
+	do {
+		$tmpPath = Join-Path -Path $FILEPATH -ChildPath "$($PNG_PREFIX)-$(('{0:D3}' -f $index)).png"
+		$index++
+	} while (Test-Path $tmpPath)
+	return $tmpPath
+}
 
-do {
-	$savePath = Join-Path -Path $FILEPATH -ChildPath "$($PNG_PREFIX)-$(('{0:D3}' -f $index)).png"
-	$index++
-} while (Test-Path $savePath)
-
+$savePath = getSavePath
 $targetBmp = $screenBmp.Clone($targetRect, $screenBmp.PixelFormat)
 $targetBmp.Save($savePath, [System.Drawing.Imaging.ImageFormat]::Png)
 Start-Process $IMAGEMAGICK -ArgumentList $savePath, '-colors 256', '-depth 8', $RESIZE, $savePath -NoNewWindow -Wait
