@@ -24,6 +24,36 @@ if ($OPTION.ContainsKey('r')) {
 	Set-Variable -Name RESIZE -Value '-resize 100%' -Option Constant
 }
 
+# -ml, -mt, -mr, mb : margin left, top, right, bottom
+Set-Variable -Name DEFAULT_MARGIN -Value 8 -Option Constant
+if ($OPTION.ContainsKey('ml')) {
+	Set-Variable -Name WIN_MARGIN_L -Value $OPTION['ml'] -Option Constant
+} else {
+	Set-Variable -Name WIN_MARGIN_L -Value $DEFAULT_MARGIN -Option Constant
+}
+if ($OPTION.ContainsKey('mt')) {
+	Set-Variable -Name WIN_MARGIN_T -Value $OPTION['mt'] -Option Constant
+} else {
+	Set-Variable -Name WIN_MARGIN_T -Value 0 -Option Constant
+}
+if ($OPTION.ContainsKey('mr')) {
+	Set-Variable -Name WIN_MARGIN_R -Value $OPTION['mr'] -Option Constant
+} else {
+	Set-Variable -Name WIN_MARGIN_R -Value $DEFAULT_MARGIN -Option Constant
+}
+if ($OPTION.ContainsKey('mb')) {
+	Set-Variable -Name WIN_MARGIN_B -Value $OPTION['mb'] -Option Constant
+} else {
+	Set-Variable -Name WIN_MARGIN_B -Value $DEFAULT_MARGIN -Option Constant
+}
+
+# -tr : trim option for imagemagick
+if ($OPTION.ContainsKey('tr')) {
+	Set-Variable -Name TRIMMING -Value $true -Option Constant
+} else {
+	Set-Variable -Name TRIMMING -Value $false -Option Constant
+}
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-type -AssemblyName microsoft.VisualBasic
@@ -31,16 +61,7 @@ Add-Type -AssemblyName UIAutomationClient
 
 Set-Variable -Name FILEPATH -Value ([System.Environment]::GetFolderPath('Desktop')) -Option Constant
 Set-Variable -Name IMAGEMAGICK -Value 'C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe' -Option Constant
-
-<#
-	0. settings : BWIN_MARGIN_T is optimized for chrome
-#>
-
 Set-Variable -Name PNG_PREFIX -Value ($TARGETAPP + '-screen') -Option Constant
-Set-Variable -Name BWIN_MARGIN_L -Value 8 -Option Constant
-Set-Variable -Name BWIN_MARGIN_T -Value 121 -Option Constant
-Set-Variable -Name BWIN_MARGIN_R -Value 8 -Option Constant
-Set-Variable -Name BWIN_MARGIN_B -Value 8 -Option Constant
 
 <#
 	1. get rectangle of $TARGETAPP window
@@ -84,10 +105,10 @@ function getDrawingRect($in_hWnd) {
 	$r = $autoElem.Current.BoundingRectangle
 	# Write-Host "X:$($r.X), Y:$($r.Y), W:$($r.Width), H:$($r.Height)"
 	return New-Object System.Drawing.Rectangle(
-		($r.X + $BWIN_MARGIN_L),
-		($r.Y + $BWIN_MARGIN_T),
-		($r.Width - $BWIN_MARGIN_L - $BWIN_MARGIN_R),
-		($r.Height - $BWIN_MARGIN_T - $BWIN_MARGIN_B)
+		($r.X + $WIN_MARGIN_L),
+		($r.Y + $WIN_MARGIN_T),
+		($r.Width - $WIN_MARGIN_L - $WIN_MARGIN_R),
+		($r.Height - $WIN_MARGIN_T - $WIN_MARGIN_B)
 	)
 }
 
@@ -139,7 +160,11 @@ function getSavePath() {
 
 $savePath = getSavePath
 $targetBmp.Save($savePath, [System.Drawing.Imaging.ImageFormat]::Png)
-Start-Process $IMAGEMAGICK -ArgumentList $savePath, '-colors 256', '-depth 8', $RESIZE, $savePath -NoNewWindow -Wait
+if ($TRIMMING) {
+	Start-Process $IMAGEMAGICK -ArgumentList $savePath, '-fuzz 10%', '-trim +repage', '-colors 256', '-depth 8', $RESIZE, $savePath -NoNewWindow -Wait
+} else {
+	Start-Process $IMAGEMAGICK -ArgumentList $savePath, '-colors 256', '-depth 8', $RESIZE, $savePath -NoNewWindow -Wait
+}
 
 $graphics.Dispose()
 $screenBmp.Dispose()
