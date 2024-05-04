@@ -160,10 +160,20 @@ function getSavePath() {
 
 $savePath = getSavePath
 $targetBmp.Save($savePath, [System.Drawing.Imaging.ImageFormat]::Png)
-if ($TRIMMING) {
-	Start-Process $IMAGEMAGICK -ArgumentList $savePath, '-fuzz 10%', '-trim +repage', '-colors 256', '-depth 8', $RESIZE, $savePath -NoNewWindow -Wait
+
+if (Test-Path $IMAGEMAGICK) {
+	$arguments = @($savePath)
+	if ($TRIMMING) {
+		$arguments += '-fuzz 10%'
+		$arguments += '-trim +repage'
+	}
+	$arguments += '-colors 256'
+	$arguments += '-depth 8'
+	$arguments += $RESIZE
+	$arguments += $savePath
+	Start-Process $IMAGEMAGICK -ArgumentList $arguments -NoNewWindow -Wait
 } else {
-	Start-Process $IMAGEMAGICK -ArgumentList $savePath, '-colors 256', '-depth 8', $RESIZE, $savePath -NoNewWindow -Wait
+	Write-Host "note : there is not $($IMAGEMAGICK)"
 }
 
 $graphics.Dispose()
