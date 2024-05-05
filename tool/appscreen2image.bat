@@ -1,57 +1,60 @@
 @powershell "$THISFILE=\"%~f0\"; $PSCODE=[scriptblock]::create((Get-Content $THISFILE | Where-Object {$_.readcount -gt 1}) -join \"`n\"); & $PSCODE %*" & goto:eof
 
-param([string[]]$args)
+Set-Variable -Name NEEDLE -Value 'PSCODE' -Option Constant
+Set-Variable -Name SPACE -Value '\s+' -Option Constant
+Set-Variable -Name HYPHEN -Value '-' -Option Constant
 
-$OPTION = @{}
-for ($i = 0; $i -lt $args.Length; $i++) {
-	if ($args[$i] -match '^-(.*)') {
-		$OPTION[$matches[1]] = $args[++$i]
+function parseCommandParams() {
+	$commandLine = ([Environment]::GetCommandLineArgs()) -split $NEEDLE
+	$options = $commandLine[$commandLine.Length - 1] -split $SPACE + $HYPHEN
+	$res = @{}
+	foreach ($option in $options) {
+		if (!$option) {
+			continue
+		}
+		$kv = $option -split $SPACE
+		switch ($kv.Length) {
+			1 {
+				$res[$kv[0]] = $true
+				break
+			}
+			2 {
+				$res[$kv[0]] = $kv[1]
+				break
+			}
+			default {
+				$value = @()
+				for ($i = 1; $i -lt $kv.Length; $i++) {
+					$value += $kv[$i]
+				}
+				$res[$kv[0]] = $value
+			}
+		}
 	}
+	return $res
 }
 
-# -t : target application
-if ($OPTION.ContainsKey('t')) {
-	Set-Variable -Name TARGETAPP -Value "$($OPTION['t'])" -Option Constant
-} else {
-	Set-Variable -Name TARGETAPP -Value 'chrome' -Option Constant
-}
+$parsed = parseCommandParams
 
-# -r : resize option for imagemagick
-if ($OPTION.ContainsKey('r')) {
-	Set-Variable -Name RESIZE -Value "-resize $($OPTION['r'])" -Option Constant
-	# Write-Host "resize to $($OPTION['r'])"
-} else {
-	Set-Variable -Name RESIZE -Value '-resize 100%' -Option Constant
-}
-
-# -ml, -mt, -mr, mb : margin left, top, right, bottom
 Set-Variable -Name DEFAULT_MARGIN -Value 8 -Option Constant
-if ($OPTION.ContainsKey('ml')) {
-	Set-Variable -Name WIN_MARGIN_L -Value $OPTION['ml'] -Option Constant
-} else {
-	Set-Variable -Name WIN_MARGIN_L -Value $DEFAULT_MARGIN -Option Constant
-}
-if ($OPTION.ContainsKey('mt')) {
-	Set-Variable -Name WIN_MARGIN_T -Value $OPTION['mt'] -Option Constant
-} else {
-	Set-Variable -Name WIN_MARGIN_T -Value 0 -Option Constant
-}
-if ($OPTION.ContainsKey('mr')) {
-	Set-Variable -Name WIN_MARGIN_R -Value $OPTION['mr'] -Option Constant
-} else {
-	Set-Variable -Name WIN_MARGIN_R -Value $DEFAULT_MARGIN -Option Constant
-}
-if ($OPTION.ContainsKey('mb')) {
-	Set-Variable -Name WIN_MARGIN_B -Value $OPTION['mb'] -Option Constant
-} else {
-	Set-Variable -Name WIN_MARGIN_B -Value $DEFAULT_MARGIN -Option Constant
+
+$OPTION = @{
+	't' = 'chrome'
+	'op' = @('resize', '100%')
+	'ml' = $DEFAULT_MARGIN
+	'mt' = 0
+	'mr' = $DEFAULT_MARGIN
+	'mb' = $DEFAULT_MARGIN
+	'trim' = $false
 }
 
-# -tr : trim option for imagemagick
-if ($OPTION.ContainsKey('tr')) {
-	Set-Variable -Name TRIMMING -Value $true -Option Constant
-} else {
-	Set-Variable -Name TRIMMING -Value $false -Option Constant
+# foreach ($key in $OPTION.Keys) { : Collection was modified; enumeration operation may not execute.
+foreach ($key in ($OPTION.Keys | ForEach-Object { $_ })) {
+	if (!$parsed.ContainsKey($key)) {
+		continue
+	}
+	$OPTION[$key] = $parsed[$key]
+	# Write-Host "update $($key) : $($OPTION[$key])"
 }
 
 Add-Type -AssemblyName System.Windows.Forms
@@ -61,10 +64,10 @@ Add-Type -AssemblyName UIAutomationClient
 
 Set-Variable -Name FILEPATH -Value ([System.Environment]::GetFolderPath('Desktop')) -Option Constant
 Set-Variable -Name IMAGEMAGICK -Value 'C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe' -Option Constant
-Set-Variable -Name PNG_PREFIX -Value ($TARGETAPP + '-screen') -Option Constant
+Set-Variable -Name PNG_PREFIX -Value ($OPTION['t'] + '-screen') -Option Constant
 
 <#
-	1. get rectangle of $TARGETAPP window
+	1. get rectangle of $OPTION['t'] window
 #>
 
 function isIconic($in_e) {
@@ -105,14 +108,14 @@ function getDrawingRect($in_hWnd) {
 	$r = $autoElem.Current.BoundingRectangle
 	# Write-Host "X:$($r.X), Y:$($r.Y), W:$($r.Width), H:$($r.Height)"
 	return New-Object System.Drawing.Rectangle(
-		($r.X + $WIN_MARGIN_L),
-		($r.Y + $WIN_MARGIN_T),
-		($r.Width - $WIN_MARGIN_L - $WIN_MARGIN_R),
-		($r.Height - $WIN_MARGIN_T - $WIN_MARGIN_B)
+		($r.X + $OPTION['ml']),
+		($r.Y + $OPTION['mt']),
+		($r.Width - $OPTION['ml'] - $OPTION['mr']),
+		($r.Height - $OPTION['mt'] - $OPTION['mb'])
 	)
 }
 
-$targetProcess = getProcess $TARGETAPP
+$targetProcess = getProcess $OPTION['t']
 
 if ($targetProcess) {
 	$targetRect = getDrawingRect $targetProcess.MainWindowHandle
@@ -163,13 +166,15 @@ $targetBmp.Save($savePath, [System.Drawing.Imaging.ImageFormat]::Png)
 
 if (Test-Path $IMAGEMAGICK) {
 	$arguments = @($savePath)
-	if ($TRIMMING) {
+	if ($OPTION['trim']) {
 		$arguments += '-fuzz 10%'
 		$arguments += '-trim +repage'
+		Write-Host "error : $($in_app) is not normal state"
+
 	}
 	$arguments += '-colors 256'
 	$arguments += '-depth 8'
-	$arguments += $RESIZE
+	$arguments += "-$($OPTION['op'][0]) $($OPTION['op'][1])"
 	$arguments += $savePath
 	Start-Process $IMAGEMAGICK -ArgumentList $arguments -NoNewWindow -Wait
 } else {
