@@ -1,18 +1,18 @@
 @powershell "$THISFILE=\"%~f0\"; $PSCODE=[scriptblock]::create((Get-Content $THISFILE | Where-Object {$_.readcount -gt 1}) -join \"`n\"); & $PSCODE %*" & goto:eof
 
-Set-Variable -Name NEEDLE -Value 'PSCODE' -Option Constant
-Set-Variable -Name SPACE -Value '\s+' -Option Constant
-Set-Variable -Name HYPHEN -Value '-' -Option Constant
+Set-Variable -Name SEPARATOR_COMMAND -Value 'PSCODE' -Option Constant
+Set-Variable -Name SEPARATOR_OPTION -Value '\s+-' -Option Constant
+Set-Variable -Name SEPARATOR_VALUE -Value '\s+' -Option Constant
 
 function parseCommandParams() {
-	$commandLine = ([Environment]::GetCommandLineArgs()) -split $NEEDLE
-	$options = $commandLine[$commandLine.Length - 1] -split $SPACE + $HYPHEN
+	$commandLine = ([Environment]::GetCommandLineArgs()) -split $SEPARATOR_COMMAND
+	$options = $commandLine[$commandLine.Length - 1] -split $SEPARATOR_OPTION
 	$res = @{}
 	foreach ($option in $options) {
 		if (!$option) {
 			continue
 		}
-		$kv = $option -split $SPACE
+		$kv = $option -split $SEPARATOR_VALUE
 		switch ($kv.Length) {
 			1 {
 				$res[$kv[0]] = $true
@@ -34,7 +34,7 @@ function parseCommandParams() {
 	return $res
 }
 
-$parsed = parseCommandParams
+$INPUT_ARGS = parseCommandParams
 
 Set-Variable -Name DEFAULT_MARGIN -Value 8 -Option Constant
 
@@ -50,10 +50,10 @@ $OPTION = @{
 
 # foreach ($key in $OPTION.Keys) { : Collection was modified; enumeration operation may not execute.
 foreach ($key in ($OPTION.Keys | ForEach-Object { $_ })) {
-	if (!$parsed.ContainsKey($key)) {
+	if (!$INPUT_ARGS.ContainsKey($key)) {
 		continue
 	}
-	$OPTION[$key] = $parsed[$key]
+	$OPTION[$key] = $INPUT_ARGS[$key]
 	# Write-Host "update $($key) : $($OPTION[$key])"
 }
 
@@ -63,7 +63,7 @@ Add-type -AssemblyName microsoft.VisualBasic
 Add-Type -AssemblyName UIAutomationClient
 
 Set-Variable -Name FILEPATH -Value ([System.Environment]::GetFolderPath('Desktop')) -Option Constant
-Set-Variable -Name IMAGEMAGICK -Value 'C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe' -Option Constant
+Set-Variable -Name IMAGEMAGICK -Value 'C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick-x.exe' -Option Constant
 Set-Variable -Name PNG_PREFIX -Value ($OPTION['t'] + '-screen') -Option Constant
 
 <#
@@ -149,7 +149,7 @@ if ($screenRect.Contains($targetRect)) {
 }
 
 <#
-	4. save bitmap of '3' and exec $IMAGEMAGICK
+	4. save bitmap of '3'
 #>
 
 function getSavePath() {
@@ -164,11 +164,17 @@ function getSavePath() {
 $savePath = getSavePath
 $targetBmp.Save($savePath, [System.Drawing.Imaging.ImageFormat]::Png)
 
+<#
+	5. exec $IMAGEMAGICK
+#>
+
 if (Test-Path $IMAGEMAGICK) {
 	$arguments = @($savePath)
 	if ($OPTION['trim']) {
 		$arguments += '-fuzz 10%'
 		$arguments += '-trim +repage'
+		Write-Host "error : $($in_app) is not normal state"
+
 	}
 	$arguments += '-colors 256'
 	$arguments += '-depth 8'
@@ -176,8 +182,18 @@ if (Test-Path $IMAGEMAGICK) {
 	$arguments += $savePath
 	Start-Process $IMAGEMAGICK -ArgumentList $arguments -NoNewWindow -Wait
 } else {
-	Write-Host "note : there is not $($IMAGEMAGICK)"
+	$required = @('op', 'trim')
+	foreach ($key in $required) {
+		if ($INPUT_ARGS.ContainsKey($key)) {
+			Write-Host "error : option '$($key)' needs $($IMAGEMAGICK)"
+			break
+		}
+	}
 }
+
+<#
+	6. finalize
+#>
 
 $graphics.Dispose()
 $screenBmp.Dispose()
