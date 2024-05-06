@@ -173,8 +173,6 @@ if (Test-Path $IMAGEMAGICK) {
 	if ($OPTION['trim']) {
 		$arguments += '-fuzz 10%'
 		$arguments += '-trim +repage'
-		Write-Host "error : $($in_app) is not normal state"
-
 	}
 	$arguments += '-colors 256'
 	$arguments += '-depth 8'
