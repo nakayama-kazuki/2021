@@ -39,13 +39,13 @@ $INPUT_ARGS = parseCommandParams
 Set-Variable -Name DEFAULT_MARGIN -Value 8 -Option Constant
 
 $OPTION = @{
-	't' = 'chrome'
-	'op' = @('resize', '100%')
-	'ml' = $DEFAULT_MARGIN
-	'mt' = 0
-	'mr' = $DEFAULT_MARGIN
-	'mb' = $DEFAULT_MARGIN
-	'trim' = $false
+	't' = 'chrome'				# target app
+	'ml' = $DEFAULT_MARGIN		# margin left
+	'mt' = 0					# margin top
+	'mr' = $DEFAULT_MARGIN		# margin right
+	'mb' = $DEFAULT_MARGIN		# margin bottom
+	'op' = @('resize', '100%')	# option for ImageMagick ( name + valur )
+	'trim' = $false				# option for ImageMagick ( trim )
 }
 
 # foreach ($key in $OPTION.Keys) { : Collection was modified; enumeration operation may not execute.
