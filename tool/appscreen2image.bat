@@ -1,5 +1,11 @@
 @powershell "$THISFILE=\"%~f0\"; $PSCODE=[scriptblock]::create((Get-Content $THISFILE | Where-Object {$_.readcount -gt 1}) -join \"`n\"); & $PSCODE %*" & goto:eof
 
+<#
+	Using this script, you can get PNG image of application window.
+	$OPTION : Setting these options, you can customize the behavior
+	$IMAGEMAGICK : If you already installed ImageMagick, set the path to this variable. Some options need ImageMagick
+#>
+
 Set-Variable -Name SEPARATOR_COMMAND -Value 'PSCODE' -Option Constant
 Set-Variable -Name SEPARATOR_OPTION -Value '\s+-' -Option Constant
 Set-Variable -Name SEPARATOR_VALUE -Value '\s+' -Option Constant
