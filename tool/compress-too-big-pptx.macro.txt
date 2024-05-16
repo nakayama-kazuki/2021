@@ -1,0 +1,94 @@
+' 1. open pptx
+' 2. alt + F11
+' 3. insert standard module
+' 4. paste this script & edit it
+' 5. exec macro (F5)
+'   5.1 remove all Hidden slide
+'   5.2 remove all msoMedia ( and add media name to note )
+'   5.3 compress all msoPicture using external program
+
+Public Const NOTE_SHAPE_IX As Long = 2
+Public Const COMPRESS_IMG_IN_CLIPBOARD As String = ".\compress-too-big-pptx.bat"
+Public Const PATH_SEPARATOR As String = "\"
+
+Function moveToFilePath() As Boolean
+	Dim path As String
+	path = ActivePresentation.FullName
+	If path <> "" Then
+		ChDir Left(path, InStrRev(path, PATH_SEPARATOR))
+		moveToFilePath = True
+	Else
+		moveToFilePath = False
+	End If
+End Function
+
+Sub ungroup(in_obj As Shape)
+	Dim i As Long
+	If in_obj.Type = msoGroup Then
+		Dim groupItems As ShapeRange
+		Set groupItems = in_obj.Ungroup
+		For i = groupItems.Count To 1 Step -1
+			Call ungroup(groupItems(i))
+		Next i
+	End If
+End Sub
+
+Sub addNote(in_slide As Slide, in_text As String)
+	Dim shape As Shape
+	Set shape = in_slide.NotesPage.Shapes(NOTE_SHAPE_IX)
+	shape.TextFrame.TextRange.Text = in_text & vbCrLf & shape.TextFrame.TextRange.Text
+End Sub
+
+Sub processClipboard()
+	If Dir(COMPRESS_IMG_IN_CLIPBOARD) <> "" Then
+		Dim wsh As Object
+		Set wsh = CreateObject("WScript.Shell")
+		Dim exitCode As Integer
+		exitCode = wsh.Run(COMPRESS_IMG_IN_CLIPBOARD, 0, True)
+		Debug.Print "info : COMPRESS_IMG_IN_CLIPBOARD : " & exitCode
+	Else
+		Debug.Print "err : there is not COMPRESS_IMG_IN_CLIPBOARD"
+	End If
+End Sub
+
+Sub handleMedias(in_slide As Slide)
+	Dim i As Long
+	Dim shape As Shape
+	For i = in_slide.Shapes.Count To 1 Step -1
+		Set shape = in_slide.Shapes(i)
+		If shape.Type = msoMedia Then
+			Call addNote(in_slide, "( removed : " & shape.Name & " )")
+			shape.Delete
+		ElseIf shape.Type = msoPicture Then
+			Dim range  As ShapeRange
+			shape.Copy
+			processClipboard
+			Set range = in_slide.Shapes.Paste
+			range(1).Left = shape.Left
+			range(1).Top = shape.Top
+			range(1).Width = shape.Width
+			range(1).Height = shape.Height
+			shape.Delete
+		End If
+	Next i
+End Sub
+
+Sub main()
+	Dim i As Long,  j As Long
+	If Not moveToFilePath Then
+		Debug.Print "err : there is not saved file"
+		Exit Sub
+	End If
+	For i = ActivePresentation.Slides.Count To 1 Step -1
+		Dim slide As Slide
+		Set slide = ActivePresentation.Slides(i)
+		If slide.SlideShowTransition.Hidden Then
+			Call slide.Delete()
+		Else
+			For j = slide.Shapes.Count To 1 Step -1
+				Call ungroup(slide.Shapes(j))
+			Next j
+			Call handleMedias(slide)
+		End If
+	Next i
+End Sub
