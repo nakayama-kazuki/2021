@@ -1,3 +1,4 @@
+' ------------------------------------------------------------------------------
 ' 1. open pptx
 ' 2. alt + F11
 ' 3. insert standard module
@@ -5,10 +6,11 @@
 ' 5. exec macro (F5)
 '   5.1 remove all Hidden slide
 '   5.2 remove all msoMedia ( and add media name to note )
-'   5.3 compress all msoPicture using external program
+'   5.3 compress all msoPicture using export + import
+' ------------------------------------------------------------------------------
 
 Public Const NOTE_SHAPE_IX As Long = 2
-Public Const COMPRESS_IMG_IN_CLIPBOARD As String = ".\compress-too-big-pptx.bat"
+Public Const LEVEL_OF_DETAIL As Long = 10
 Public Const PATH_SEPARATOR As String = "\"
 
 Function moveToFilePath() As Boolean
@@ -39,18 +41,6 @@ Sub addNote(in_slide As Slide, in_text As String)
 	shape.TextFrame.TextRange.Text = in_text & vbCrLf & shape.TextFrame.TextRange.Text
 End Sub
 
-Sub processClipboard()
-	If Dir(COMPRESS_IMG_IN_CLIPBOARD) <> "" Then
-		Dim wsh As Object
-		Set wsh = CreateObject("WScript.Shell")
-		Dim exitCode As Integer
-		exitCode = wsh.Run(COMPRESS_IMG_IN_CLIPBOARD, 0, True)
-		Debug.Print "info : COMPRESS_IMG_IN_CLIPBOARD : " & exitCode
-	Else
-		Debug.Print "err : there is not COMPRESS_IMG_IN_CLIPBOARD"
-	End If
-End Sub
-
 Sub handleMedias(in_slide As Slide)
 	Dim i As Long
 	Dim shape As Shape
@@ -58,17 +48,16 @@ Sub handleMedias(in_slide As Slide)
 		Set shape = in_slide.Shapes(i)
 		If shape.Type = msoMedia Then
 			Call addNote(in_slide, "( removed : " & shape.Name & " )")
-			shape.Delete
+			Call shape.Delete()
 		ElseIf shape.Type = msoPicture Then
-			Dim range  As ShapeRange
-			shape.Copy
-			processClipboard
-			Set range = in_slide.Shapes.Paste
-			range(1).Left = shape.Left
-			range(1).Top = shape.Top
-			range(1).Width = shape.Width
-			range(1).Height = shape.Height
-			shape.Delete
+			Dim tmpPath As String
+			Dim added As Shape
+			tmpPath = Environ("TEMP") & PATH_SEPARATOR & "temp.jpg"
+			Call shape.Export( _
+				tmpPath, ppShapeFormatJPG, shape.Width * LEVEL_OF_DETAIL, shape.Height * LEVEL_OF_DETAIL)
+			Set added = in_slide.Shapes.AddPicture( _
+				tmpPath, msoFalse, msoTrue, shape.Left, shape.Top, shape.Width, shape.Height)
+			Call shape.Delete()
 		End If
 	Next i
 End Sub
