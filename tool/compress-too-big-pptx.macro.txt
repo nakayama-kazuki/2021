@@ -10,8 +10,11 @@
 ' ------------------------------------------------------------------------------
 
 Public Const NOTE_SHAPE_IX As Long = 2
-Public Const LEVEL_OF_DETAIL As Long = 10
 Public Const PATH_SEPARATOR As String = "\"
+
+Public Const COMPRESS_PRECISE As Long = 5
+Public Const COMPRESS_FORMAT As Long = ppShapeFormatGIF
+'Public Const COMPRESS_FORMAT As Long = ppShapeFormatJPG
 
 Function moveToFilePath() As Boolean
 	Dim path As String
@@ -52,9 +55,9 @@ Sub handleMedias(in_slide As Slide)
 		ElseIf shape.Type = msoPicture Then
 			Dim tmpPath As String
 			Dim added As Shape
-			tmpPath = Environ("TEMP") & PATH_SEPARATOR & "temp.jpg"
+			tmpPath = Environ("TEMP") & PATH_SEPARATOR & "temp.bin"
 			Call shape.Export( _
-				tmpPath, ppShapeFormatJPG, shape.Width * LEVEL_OF_DETAIL, shape.Height * LEVEL_OF_DETAIL)
+				tmpPath, COMPRESS_FORMAT, shape.Width * LEVEL_OF_DETAIL, shape.Height * COMPRESS_PRECISE)
 			Set added = in_slide.Shapes.AddPicture( _
 				tmpPath, msoFalse, msoTrue, shape.Left, shape.Top, shape.Width, shape.Height)
 			Call shape.Delete()
