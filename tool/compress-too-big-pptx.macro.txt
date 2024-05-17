@@ -7,6 +7,8 @@
 '   5.1 remove all Hidden slide
 '   5.2 remove all msoMedia ( and add media name to note )
 '   5.3 compress all msoPicture using export + import
+'     COMPRESS_PRECISE : display size (point) * this value, as width & height
+'     COMPRESS_FORMAT : if many photos in pptx, ppShapeFormatJPG is recommended
 ' ------------------------------------------------------------------------------
 
 Public Const NOTE_SHAPE_IX As Long = 2
