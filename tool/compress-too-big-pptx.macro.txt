@@ -14,20 +14,9 @@
 Public Const NOTE_SHAPE_IX As Long = 2
 Public Const PATH_SEPARATOR As String = "\"
 
-Public Const COMPRESS_PRECISE As Long = 5
+Public Const COMPRESS_PRECISE As Long = 4
 Public Const COMPRESS_FORMAT As Long = ppShapeFormatGIF
 'Public Const COMPRESS_FORMAT As Long = ppShapeFormatJPG
-
-Function moveToFilePath() As Boolean
-	Dim path As String
-	path = ActivePresentation.FullName
-	If path <> "" Then
-		ChDir Left(path, InStrRev(path, PATH_SEPARATOR))
-		moveToFilePath = True
-	Else
-		moveToFilePath = False
-	End If
-End Function
 
 Sub ungroup(in_obj As Shape)
 	Dim i As Long
@@ -69,10 +58,6 @@ End Sub
 
 Sub main()
 	Dim i As Long,  j As Long
-	If Not moveToFilePath Then
-		Debug.Print "err : there is not saved file"
-		Exit Sub
-	End If
 	For i = ActivePresentation.Slides.Count To 1 Step -1
 		Dim slide As Slide
 		Set slide = ActivePresentation.Slides(i)
