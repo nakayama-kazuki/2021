@@ -48,7 +48,7 @@ Sub handleMedias(in_slide As Slide)
 			Dim added As Shape
 			tmpPath = Environ("TEMP") & PATH_SEPARATOR & "temp.bin"
 			Call shape.Export( _
-				tmpPath, COMPRESS_FORMAT, shape.Width * LEVEL_OF_DETAIL, shape.Height * COMPRESS_PRECISE)
+				tmpPath, COMPRESS_FORMAT, shape.Width * COMPRESS_PRECISE, shape.Height * COMPRESS_PRECISE)
 			Set added = in_slide.Shapes.AddPicture( _
 				tmpPath, msoFalse, msoTrue, shape.Left, shape.Top, shape.Width, shape.Height)
 			Call shape.Delete()
