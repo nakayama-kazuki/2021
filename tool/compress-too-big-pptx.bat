@@ -1,5 +1,14 @@
 @powershell "$THISFILE=\"%~f0\"; $PSCODE=[scriptblock]::create((Get-Content $THISFILE | Where-Object {$_.readcount -gt 1}) -join \"`n\"); & $PSCODE %*" & goto:eof
 
+<#
+	Using this script, you can compress filesize of active pptx (without macro)
+	1. remove all Hidden slide
+	2. remove all MSO_MEDIA ( and add media name to note )
+	3. compress all MSO_PICTURE using export + import
+		$COMPRESS_PRECISE : display size (point) * this value, as width & height
+		$COMPRESS_FORMAT : if many photos in pptx, ppShapeFormatJPG is recommended
+#>
+
 Set-Variable -Name NOTE_SHAPE_IX -Value 2 -Option Constant
 Set-Variable -Name PATH_SEPARATOR -Value "\" -Option Constant
 Set-Variable -Name VBCRLF -Value "`r`n" -Option Constant
@@ -49,7 +58,7 @@ $gCom = New-Object -ComObject PowerPoint.Application
 $gPresentation = $gCom.ActivePresentation
 
 if (-not $gPresentation) {
-	Write-Host "error : pptx is not opened."
+	[System.Windows.Forms.MessageBox]::Show("pptx is not opened");
 } else {
 	for ($i = $gPresentation.Slides.Count; $i -gt 0; $i--) {
 		$slide = $gPresentation.Slides.Item($i)
