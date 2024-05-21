@@ -58,7 +58,8 @@ $gCom = New-Object -ComObject PowerPoint.Application
 $gPresentation = $gCom.ActivePresentation
 
 if (-not $gPresentation) {
-	[System.Windows.Forms.MessageBox]::Show("pptx is not opened");
+	Add-Type -AssemblyName System.Windows.Forms
+	[System.Windows.Forms.MessageBox]::Show("pptx is not opened")
 } else {
 	for ($i = $gPresentation.Slides.Count; $i -gt 0; $i--) {
 		$slide = $gPresentation.Slides.Item($i)
