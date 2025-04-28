@@ -8,7 +8,8 @@ define('TAB2SP', 4);
 
 function convert_encoding($in_str)
 {
-	return mb_convert_encoding($in_str, 'SJIS');
+	// return mb_convert_encoding($in_str, 'SJIS');
+	return str_replace('?', ' ', mb_convert_encoding($in_str, 'SJIS'));
 }
 
 function remove_safelinks($in_str)
@@ -142,5 +143,5 @@ if (TRUE) {
 	header('Content-Type: text/plain;');
 	$lines = explode(CRLF, $test_data);
 }
-
+array_push($lines, '*** snip ***');
 echo_formatted_mail($lines);
