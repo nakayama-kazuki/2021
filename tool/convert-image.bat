@@ -45,7 +45,8 @@ function detect_palette($in_im)
 
 define('BRANCH', 'XX');
 define('FORMAT', '%0' . strlen(BRANCH) . 's');
-define('FNAME', 'copied-image-as-png-' . BRANCH . '.png');
+//define('FNAME', 'copied-image-as-png-' . BRANCH . '.png');
+define('FNAME', 'png-' . substr(md5(date('Y-m-d')), 0, 4) . '-' . BRANCH . '.png');
 
 function png_file($in_path)
 {
