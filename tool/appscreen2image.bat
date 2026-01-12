@@ -2,8 +2,10 @@
 
 <#
 	Using this script, you can get PNG image of application window.
+	Change 'C:\_PATH_\_TO_\magick.exe' to match your environment.
+
 	$OPTION : Setting these options, you can customize the behavior
-	$IMAGEMAGICK : If you already installed ImageMagick, set the path to this variable. Some options need ImageMagick
+	ex. appscreen2image.bat -t chrome -mt 121
 #>
 
 Set-Variable -Name SEPARATOR_COMMAND -Value 'PSCODE' -Option Constant
@@ -69,7 +71,7 @@ Add-type -AssemblyName microsoft.VisualBasic
 Add-Type -AssemblyName UIAutomationClient
 
 Set-Variable -Name FILEPATH -Value ([System.Environment]::GetFolderPath('Desktop')) -Option Constant
-Set-Variable -Name IMAGEMAGICK -Value 'C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick-x.exe' -Option Constant
+Set-Variable -Name IMAGEMAGICK -Value 'C:\_PATH_\_TO_\magick.exe' -Option Constant
 Set-Variable -Name PNG_PREFIX -Value ($OPTION['t'] + '-screen') -Option Constant
 
 <#

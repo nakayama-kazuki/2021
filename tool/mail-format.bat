@@ -1,4 +1,9 @@
-@powershell "Get-Clipboard -Format Text" | "C:\xampp\php\php" -r "$PHPCODE = implode('', array_slice(file('%0'), 1)); eval($PHPCODE);" | clip & goto:eof
+@powershell "Get-Clipboard -Format Text" | "C:\_PATH_\_TO_\_PHP_" -r "$PHPCODE = implode('', array_slice(file('%0'), 1)); eval($PHPCODE);" | clip & goto:eof
+
+/*
+	Using this script, you can add a quote prefix ">" to the text copied to the clipboard.
+	Change "C:\_PATH_\_TO_\_PHP_" to match your environment.
+*/
 
 define('GT', chr(62));
 define('TAB', chr(9));

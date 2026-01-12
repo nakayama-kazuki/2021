@@ -1,4 +1,9 @@
-@powershell "(Get-Clipboard -Format Image).Save([console]::OpenStandardOutput(), [System.Drawing.Imaging.ImageFormat]::Png);" | "C:\xampp\php\php" -r "$PHPCODE = implode('', array_slice(file('%0'), 1)); eval($PHPCODE);" %1 & goto:eof
+@powershell "(Get-Clipboard -Format Image).Save([console]::OpenStandardOutput(), [System.Drawing.Imaging.ImageFormat]::Png);" | "C:\_PATH_\_TO_\php.exe" -r "$PHPCODE = implode('', array_slice(file('%0'), 1)); eval($PHPCODE);" %1 & goto:eof
+
+/*
+	Using this script, you can convert an image copied to the clipboard.
+	Change "C:\_PATH_\_TO_\php.exe" to match your environment.
+*/
 
 define('MAX_BIT', 8);
 define('AUTO_DETECT_PALETTE', TRUE);
@@ -77,7 +82,7 @@ if (count($argv) > 1) {
 $srcw = imagesx($im);
 $srch = imagesy($im);
 $dstw = ($srcw > $wcap) ? $wcap : $srcw;
-$dsth = ($srcw > $wcap) ? $srch * $wcap / $srcw : $srch;
+$dsth = ($srcw > $wcap) ? (int)round($srch * $wcap / $srcw) : (int)$srch;
 
 $im_dst = imagecreatetruecolor($dstw, $dsth);
 imagecopyresampled($im_dst, $im, 0, 0, 0, 0, $dstw, $dsth, $srcw, $srch);

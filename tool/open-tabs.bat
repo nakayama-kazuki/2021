@@ -1,5 +1,9 @@
 @powershell "$THISFILE=\"%~f0\"; $PSCODE=[scriptblock]::create((Get-Content $THISFILE | Where-Object {$_.readcount -gt 1}) -join \"`n\"); & $PSCODE" & goto:eof
 
+<#
+	Using this script, you can open URLs copied to the clipboard.
+#>
+
 $copiedText = Get-Clipboard -Format Text;
 
 $urls = @();
